@@ -1539,20 +1539,23 @@ async function supaInsertScore(session, employee) {
 async function supaFetchLeaderboard() {
   try {
     const res = await fetch(
-      `${SUPA_URL}/rest/v1/scores?select=employee,score,total&order=score.desc`,
+      `${SUPA_URL}/rest/v1/scores?select=employee,score,total&limit=1000`,
       { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
     );
     if (!res.ok) return null;
     const rows = await res.json();
-    // Aggregate: best % per employee
+    if (!Array.isArray(rows) || !rows.length) return null;
+    // Aggregate: best % per employee across all their exams
     const map = {};
     rows.forEach(r => {
+      if (!r.employee || !r.total) return;
       const pct = Math.round(r.score / r.total * 100);
       if (!map[r.employee] || pct > map[r.employee].best) {
         map[r.employee] = { name: r.employee, best: pct };
       }
     });
-    return Object.values(map).sort((a,b) => b.best - a.best).slice(0, 20);
+    const result = Object.values(map).sort((a,b) => b.best - a.best).slice(0, 20);
+    return result.length ? result : null;
   } catch(e) { return null; }
 }
 let DB={employees:{}};
@@ -1577,9 +1580,14 @@ loadDB();
 function renderLeaderboard(){
   const el=document.getElementById('leaderboard');
   if(!el) return;
-  // Show local data immediately, then refresh from Supabase
+  // Show local data immediately
   renderLeaderboardData(el, getLocalLeaderboard());
+  // Add loading indicator
+  const title=el.querySelector('.leaderboard-title');
+  if(title) title.insertAdjacentHTML('beforeend','<span id="lb-loading" style="font-size:.7rem;opacity:.5;margin-left:.5rem">↻ actualizando...</span>');
   supaFetchLeaderboard().then(remote=>{
+    const loader=document.getElementById('lb-loading');
+    if(loader) loader.remove();
     if(remote && remote.length) renderLeaderboardData(el, remote);
   });
 }
@@ -2013,20 +2021,20 @@ function startExam(){
     if(validQuestions.length>=examConfig.count) break;
     let topicKey=examConfig.topic==='mixed'?TOPICS[Math.floor(Math.random()*TOPICS.length)].key:examConfig.topic;
     let topic=TOPICS.find(tp=>tp.key===topicKey);
-    let correct=topic.a(d);
+    let correct=(topic.a(d)||'').trim().replace(/\.+$/,'');
     // If answer is empty/dash, try another topic in mixed mode
     const isEmpty=v=>!v||v==='—'||v===noHist;
     if(isEmpty(correct)){
       if(examConfig.topic==='mixed'){
         const fb=TOPICS.find(tp=>{const a=tp.a(d);return !isEmpty(a);});
-        if(fb){topic=fb;correct=fb.a(d);}else continue;
+        if(fb){topic=fb;correct=(fb.a(d)||'').trim().replace(/\.+$/,'');}else continue;
       }else continue;
     }
     const wrongPool=DISHES.filter(x=>x.id!==d.id).sort(()=>Math.random()-.5);
     const wrongs=[];
     for(const o of wrongPool){
       if(wrongs.length>=3) break;
-      const w=topic.a(o);
+      const w=(topic.a(o)||'').trim().replace(/\.+$/,'');
       if(!isEmpty(w)&&w!==correct&&!wrongs.includes(w)) wrongs.push(w);
     }
     if(wrongs.length<3) continue; // not enough good distractors, skip
@@ -2077,7 +2085,7 @@ function answerExam(idx){
   examAnswered=true;clearInterval(timerInterval);
   const q=examDishes[examIndex];
   const chosen=q.choices[idx];
-  const ok=chosen===q.correct;
+  const norm=s=>s?s.trim().replace(/\.+$/,'').toLowerCase():'';const ok=norm(chosen)===norm(q.correct);
   if(ok)examScore++;
   const emp=getEmp(currentUser);
   emp.topicScores[q.topic.key]=emp.topicScores[q.topic.key]||{correct:0,total:0};
@@ -2086,7 +2094,7 @@ function answerExam(idx){
   saveDB();
   document.querySelectorAll('.choice').forEach((el,i)=>{
     el.classList.add('locked');
-    if(q.choices[i]===q.correct)el.classList.add('correct');
+    if(norm(q.choices[i])===norm(q.correct))el.classList.add('correct');
     else if(i===idx&&!ok)el.classList.add('wrong');
   });
   const fb=document.getElementById('examFeedback');
