@@ -946,6 +946,156 @@ body::before{
   padding-top:.4rem;
   border-top:1px solid var(--ink4);
 }
+
+/* ═══════════════════════════════ TXOKO GAME ═══════════════════════════════ */
+.txoko-wrap{padding:1rem;max-width:480px;margin:0 auto;}
+.txoko-hero{
+  text-align:center;padding:2.5rem 1rem 2rem;
+  animation:scaleIn .4s ease both;
+}
+.txoko-hero-icon{font-size:3.5rem;margin-bottom:.5rem;filter:drop-shadow(0 0 20px rgba(200,169,110,.4));}
+.txoko-hero-title{font-family:'Playfair Display',serif;font-size:2rem;color:var(--parchment);margin-bottom:.3rem;}
+.txoko-hero-sub{font-size:.8rem;color:var(--parch3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2rem;}
+.txoko-record-box{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:1rem 1.5rem;margin-bottom:1.5rem;
+  display:flex;align-items:center;gap:1rem;
+}
+.txoko-record-icon{font-size:1.8rem;}
+.txoko-record-label{font-size:.7rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.1em;}
+.txoko-record-val{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gold);}
+
+/* game screen */
+.txoko-game{padding:.75rem;max-width:480px;margin:0 auto;}
+.txoko-hud{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:.75rem;
+}
+.txoko-lives{font-size:1.3rem;letter-spacing:.15rem;}
+.txoko-streak{
+  font-family:'DM Mono',monospace;font-size:.75rem;
+  color:var(--gold);background:var(--gold-b);
+  border:1px solid var(--gold-a);border-radius:20px;
+  padding:.2rem .7rem;
+}
+.txoko-score-hud{
+  font-family:'DM Mono',monospace;font-size:.75rem;color:var(--parch2);
+}
+
+/* restaurant scene */
+.txoko-scene{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:1rem;margin-bottom:.75rem;
+  position:relative;overflow:hidden;
+  min-height:80px;
+}
+.txoko-scene::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+.txoko-waiter{
+  display:flex;align-items:flex-start;gap:.75rem;
+}
+.txoko-waiter-avatar{
+  width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--parchment),#3d2e1a);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;
+}
+.txoko-waiter-bubble{
+  background:var(--ink2);border:1px solid var(--line);
+  border-radius:0 var(--r) var(--r) var(--r);
+  padding:.6rem .9rem;font-size:.82rem;color:var(--parchment);
+  line-height:1.5;flex:1;
+}
+.txoko-waiter-bubble strong{color:var(--parchment);font-weight:600;}
+.txoko-dish-badge{
+  display:inline-block;background:var(--gold-b);border:1px solid var(--gold-a);
+  border-radius:20px;padding:.15rem .6rem;font-size:.72rem;
+  color:var(--gold);font-weight:500;margin-top:.3rem;
+}
+
+/* patience bar */
+.txoko-patience-wrap{margin-bottom:.75rem;}
+.txoko-patience-label{
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  color:var(--parch3);text-transform:uppercase;letter-spacing:.1em;
+  margin-bottom:.25rem;display:flex;justify-content:space-between;
+}
+.txoko-patience-track{
+  height:6px;background:var(--ink3);border-radius:3px;overflow:hidden;
+}
+.txoko-patience-fill{
+  height:100%;border-radius:3px;
+  transition:width .1s linear, background .3s ease;
+}
+
+/* choices */
+.txoko-choices{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.75rem;}
+.txoko-choice{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r2);
+  padding:.7rem 1rem;cursor:pointer;text-align:left;
+  transition:all .18s ease;font-size:.8rem;color:var(--parchment);
+  line-height:1.4;
+}
+.txoko-choice:hover:not(:disabled){
+  border-color:var(--gold-a);background:var(--gold-b);transform:translateX(3px);
+}
+.txoko-choice.correct{
+  background:#e8f5ee;border-color:#3d7a54;color:#1a3d2a;
+  animation:pulse .3s ease;
+}
+.txoko-choice.wrong{
+  background:#fdecea;border-color:#a84040;color:#5a1a1a;
+  animation:shake .3s ease;
+}
+.txoko-choice:disabled{cursor:default;}
+.txoko-choice-letter{
+  font-family:'DM Mono',monospace;font-size:.65rem;
+  color:var(--gold);margin-right:.5rem;font-weight:500;
+}
+
+/* feedback bar */
+.txoko-feedback{
+  text-align:center;font-size:.78rem;padding:.5rem;
+  border-radius:var(--r2);margin-bottom:.5rem;
+  font-weight:500;opacity:0;transition:opacity .2s;
+}
+.txoko-feedback.show{opacity:1;}
+.txoko-feedback.ok{background:#e8f5ee;color:#1a3d2a;}
+.txoko-feedback.ko{background:#fdecea;color:#5a1a1a;}
+
+/* difficulty badge */
+.txoko-diff{
+  font-family:'DM Mono',monospace;font-size:.6rem;
+  text-transform:uppercase;letter-spacing:.1em;
+  padding:.2rem .6rem;border-radius:20px;
+}
+.txoko-diff.calma{background:#e8f5ee;color:#1a3d2a;}
+.txoko-diff.ritmo{background:#fff8e6;color:#7a5a00;}
+.txoko-diff.fuego{background:#fdecea;color:#5a1a1a;}
+.txoko-diff.infierno{background:#1a1714;color:#ff6b6b;border:1px solid #ff6b6b;}
+
+/* game over */
+.txoko-gameover{
+  text-align:center;padding:2rem 1rem;
+  animation:scaleIn .4s ease both;
+}
+.txoko-gameover-icon{font-size:3rem;margin-bottom:.5rem;}
+.txoko-gameover-title{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--parchment);margin-bottom:.3rem;}
+.txoko-gameover-sub{font-size:.8rem;color:var(--parch3);margin-bottom:1.5rem;}
+.txoko-gameover-stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1.5rem;
+}
+.txoko-stat-card{
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  padding:1rem;text-align:center;
+}
+.txoko-stat-num{font-family:'Playfair Display',serif;font-size:2rem;color:var(--gold);}
+.txoko-stat-lbl{font-size:.65rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.1em;}
+
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.02)}100%{transform:scale(1)}}
 </style>
 </head>
 <body>
@@ -996,6 +1146,7 @@ body::before{
     <button class="nav-btn" id="navExam" onclick="showTab('exam')">Examen</button>
     <button class="nav-btn" id="navRepaso" onclick="showTab('repaso')">Repaso</button>
     <button class="nav-btn" id="navStats" onclick="showTab('stats')">Estadísticas</button>
+    <button class="nav-btn" id="navTxoko" onclick="showTab('txoko')">🎮 Juegos</button>
   </nav>
 
   <div class="app-content" id="appContent"></div>
@@ -1389,17 +1540,17 @@ const DISHES = [
   {id:24,cat:'Platos Principales',name:'Carrillera de Wagyu',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Dióxido de azufre y sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ajo, Puerros, Cebolla, Zanahoria, Vino tinto, Caldo de pollo, Espuma de hongo y papas, Nata, Crudité de espárragos.',history:'Plato emblemático de Martín en el menú de Txoko. Hecha de forma tradicional con cocciones largas que nos aportan una textura muy suave en boca, redondeamos este sabor con espuma de hongos que ayuda a neutralizar la intensidad de la carrillera.',notes:'⭐ Plato emblemático de Martín. Carrillera de ternera a baja temperatura en cremoso de papa y hongos, espárrago verde crujiente y trufa (si disponible en temporada).'},
   {id:25,cat:'Platos Principales',name:'Pluma de cerdo Ibérico',allergens:['Lácteos','Dióxido de azufre y sulfitos','Apio'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Cerdo ibérico, Manzana encurtida, Hinojo encurtido, Puré de apiobola (mantequilla), Vinagre.',history:'Casalba tiene su origen en la sierra de la Demanda. Julio, su dueño, en estrecha relación con nuestros chefs, selecciona las piezas que vienen desde la península a nuestro restaurante. La pluma a la brasa y la presa ibérica destacan por la delicadeza de su sabor suave y textura muy agradable.',notes:'Pluma de cerdo ibérico a la brasa, puré de Apio bola y puntos de crema de zanahoria. Terminada con manzana, zanahoria y remolacha encurtidas.'},
   {id:26,cat:'Platos Principales',name:'Costillas melosas de cordero sobre salsa de curry verde',allergens:['Dióxido de azufre y sulfitos'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Cordero, Cebollas, Puerro, Tomates, Vino tinto, Pimienta y Sal, Demi de jarrete, Vinagre de cabernet, Miel, Azúcar moscovado, Zanahoria, Curry verde, Leche de coco, Caldo de pollo, Naranja, Lima, Limón, Pomelo.',history:null,notes:'⏱️ Cocción de 8 horas. Costillas selladas en el josper, envasadas al vacío con marinada. Servidas con demi glace y salsa de curry verde. Terminamos con gajos de cítricos caramelizados.'},
-  {id:27,cat:'Guarniciones',name:'Ensalada verde',allergens:['Dióxido de azufre y sulfitos'],cutlery:'Tenedor trinchero, Cuchara sopera',ingredients:'Lechuga y cebolla morada.',history:'Lechuga de nuestro proveedor ecológico de Granadilla de Abona.',notes:null},
-  {id:28,cat:'Guarniciones',name:'Coliflor frita',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Coliflor.',history:null,notes:'Coliflor blanqueada dos minutos en agua sal, luego frita.'},
-  {id:29,cat:'Guarniciones',name:'Alcachofas a la brasa',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Alcachofas nacionales.',history:null,notes:'Corazones de alcachofa confitados en aceite de oliva y luego fritos.'},
-  {id:30,cat:'Guarniciones',name:'Pimientos del padrón',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pimientos del padrón, Pimienta, Sal.',history:'Nuestros pimientos de Padrón son ecológicos y provenientes de Granadilla.',notes:null},
-  {id:32,cat:'Guarniciones',name:'Patatas cerilla fritas',allergens:['Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Patatas locales, Aceite, Sal.',history:'Nuestras patatas locales provienen de Tacoronte.',notes:'⚠️ Sin alérgenos, pero puede tener contaminación cruzada de gluten. En caso de alergia al gluten avisar a cocina. Servir siempre salsas para los niños (Mayonesa, Kéchup, etc.)'},
-  {id:33,cat:'Guarniciones',name:'Tomate Cherry al ajillo',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tomates ecológicos, Aceite, Ajo laminado, Guindilla.',history:null,notes:'Tomates ecológicos de la isla fritos en ajillo. ℹ️ Contiene ajo (no es alérgeno oficial UE, pero informar si el cliente lo indica).'},
-  {id:34,cat:'Guarniciones',name:'Parmentier de papa canaria',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:null,history:null,notes:null},
-  {id:35,cat:'Guarniciones',name:'Espárragos blancos',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:null,history:null,notes:'Espárragos a la brasa.'},
-  {id:36,cat:'Salsas',name:'Salsa de pimienta verde',allergens:['Lácteos','Dióxido de azufre y sulfitos'],cutlery:'Cuchara de té',ingredients:'Chalota, Pimienta verde, Mantequilla, Brandy, Nata, Caldo de pollo.',history:'La salsa de pimienta verde es originaria de Francia. Muy usada para acompañar carnes.',notes:'Se pocha la chalota con mantequilla, se añade la pimienta verde, brandy para flamear y por último nata y caldo de pollo hasta reducir.'},
-  {id:38,cat:'Salsas',name:'Salsa de hongos',allergens:['Lácteos','Dióxido de azufre y sulfitos'],cutlery:'Cuchara de té',ingredients:'Hongos, Nata, Mantequilla.',history:null,notes:null},
-  {id:39,cat:'Salsas',name:'Chimichurri',allergens:['Dióxido de azufre y sulfitos'],cutlery:'Cuchara de té',ingredients:'Tomate deshidratado, Cebolleta, Pimiento rojo y verde, Ajo, Aceite de oliva, Vinagre de Jerez, Ají, Limón, Perejil, Cebollino, Sal, Pimienta negra.',history:'El Chimichurri es una salsa o aderezo típico de Argentina y Uruguay empleada sobre todo en carnes asadas. Se sirve en crudo y se deja reposar horas o días para que los sabores se integren. Es una de las salsas más emblemáticas del Asado Rioplatense.',notes:'Mini brunoise de tomate seco, pimiento rojo, verde, cebolleta y ajo. Se añade vinagre de jerez, aceite, orégano y perejil.'},
+  {id:27,cat:'Guarniciones y Salsas',name:'Ensalada verde',allergens:['Dióxido de azufre y sulfitos'],cutlery:'Tenedor trinchero, Cuchara sopera',ingredients:'Lechuga y cebolla morada.',history:'Lechuga de nuestro proveedor ecológico de Granadilla de Abona.',notes:null},
+  {id:28,cat:'Guarniciones y Salsas',name:'Coliflor frita',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Coliflor.',history:null,notes:'Coliflor blanqueada dos minutos en agua sal, luego frita.'},
+  {id:29,cat:'Guarniciones y Salsas',name:'Alcachofas a la brasa',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Alcachofas nacionales.',history:null,notes:'Corazones de alcachofa confitados en aceite de oliva y luego fritos.'},
+  {id:30,cat:'Guarniciones y Salsas',name:'Pimientos del padrón',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pimientos del padrón, Pimienta, Sal.',history:'Nuestros pimientos de Padrón son ecológicos y provenientes de Granadilla.',notes:null},
+  {id:32,cat:'Guarniciones y Salsas',name:'Patatas cerilla fritas',allergens:['Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Patatas locales, Aceite, Sal.',history:'Nuestras patatas locales provienen de Tacoronte.',notes:'⚠️ Sin alérgenos, pero puede tener contaminación cruzada de gluten. En caso de alergia al gluten avisar a cocina. Servir siempre salsas para los niños (Mayonesa, Kéchup, etc.)'},
+  {id:33,cat:'Guarniciones y Salsas',name:'Tomate Cherry al ajillo',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tomates ecológicos, Aceite, Ajo laminado, Guindilla.',history:null,notes:'Tomates ecológicos de la isla fritos en ajillo. ℹ️ Contiene ajo (no es alérgeno oficial UE, pero informar si el cliente lo indica).'},
+  {id:34,cat:'Guarniciones y Salsas',name:'Parmentier de papa canaria',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:null,history:null,notes:null},
+  {id:35,cat:'Guarniciones y Salsas',name:'Espárragos blancos',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:null,history:null,notes:'Espárragos a la brasa.'},
+  {id:36,cat:'Guarniciones y Salsas',name:'Salsa de pimienta verde',allergens:['Lácteos','Dióxido de azufre y sulfitos'],cutlery:'Cuchara de té',ingredients:'Chalota, Pimienta verde, Mantequilla, Brandy, Nata, Caldo de pollo.',history:'La salsa de pimienta verde es originaria de Francia. Muy usada para acompañar carnes.',notes:'Se pocha la chalota con mantequilla, se añade la pimienta verde, brandy para flamear y por último nata y caldo de pollo hasta reducir.'},
+  {id:38,cat:'Guarniciones y Salsas',name:'Salsa de hongos',allergens:['Lácteos','Dióxido de azufre y sulfitos'],cutlery:'Cuchara de té',ingredients:'Hongos, Nata, Mantequilla.',history:null,notes:null},
+  {id:39,cat:'Guarniciones y Salsas',name:'Chimichurri',allergens:['Dióxido de azufre y sulfitos'],cutlery:'Cuchara de té',ingredients:'Tomate deshidratado, Cebolleta, Pimiento rojo y verde, Ajo, Aceite de oliva, Vinagre de Jerez, Ají, Limón, Perejil, Cebollino, Sal, Pimienta negra.',history:'El Chimichurri es una salsa o aderezo típico de Argentina y Uruguay empleada sobre todo en carnes asadas. Se sirve en crudo y se deja reposar horas o días para que los sabores se integren. Es una de las salsas más emblemáticas del Asado Rioplatense.',notes:'Mini brunoise de tomate seco, pimiento rojo, verde, cebolleta y ajo. Se añade vinagre de jerez, aceite, orégano y perejil.'},
   {id:40,cat:'Postres',name:'Flan tradicional con chantilly',allergens:['Lácteos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Leche entera, Huevos, Azúcar, Piel de naranja, Leche condensada, Vainilla, Nata, Mascarpone.',history:'El flan nació en la antigua Roma, donde se preparaba con huevos, leche y miel. Con el tiempo, la receta viajó a Francia y España, donde se convirtió en el postre suave y acaramelado que conocemos hoy. Siglos después nació la crema chantilly, inventada en el castillo de Chantilly. Cuando ambos se unieron formaron un dúo perfecto: símbolo de elegancia y placer en cada cucharada.',notes:null},
   {id:41,cat:'Postres',name:'Tocinillo de cielo',allergens:['Frutos de cáscara','Gluten','Lácteos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Huevos, Limón, Jengibre, Cacao, Café, Avellanas.',history:'El tocinillo es un postre tradicional español, muy dulce y con una textura suave y brillante, similar al flan pero más denso. Proveniente de Andalucía. Nosotros reversionamos esta receta añadiéndole otras preparaciones para llevarlo al estilo Txoko.',notes:'Crema de yema, helado de limón y jengibre, teja de chocolate, culminado con una teja de café y avellanas.'},
   {id:42,cat:'Postres',name:'Brownie de avellanas con crema de cacao y mandarina',allergens:['Frutos de cáscara','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchara de postre',ingredients:'Claras, Harina de avellanas, Chocolate negro, Cremoso de chocolate blanco, Helado de chocolate, Crema de mandarina.',history:'Este es uno de nuestros postres Gluten-free (aunque siempre aclaramos que puede contener trazas) ya que está hecho a base de harina de avellanas.',notes:'⚠️ Gluten-free pero puede contener TRAZAS. Brownie de avellana y chocolate, helado de chocolate, tubo de chocolate relleno con cremoso de cacao y mandarina. Terminamos con ganache de chocolate blanco.'},
@@ -1511,8 +1662,8 @@ const getCats=()=>{
 const catEs=(c)=>{const i=CATS_EN.indexOf(c);return i>=0?CATS_ES[i]:c;};
 const catEn=(c)=>{const i=CATS_ES.indexOf(c);return i>=0?CATS_EN[i]:c;};
 const catLocal=(c)=>LANG==='en'?catEn(c):c;
-const CAT_COLORS={'Entrantes':'#c8a96e','Hamburguesas y Bocatas':'#c87d3e','Platos Principales':'#7095c8','Guarniciones y Salsas':'#6bab82','Postres':'#ab88c8','Vegetariano':'#c87070','Principales':'#7095c8','Guarniciones':'#6bab82','Salsas':'#c8936e'};
-const CAT_ICONS={'Entrantes':'🥗','Hamburguesas y Bocatas':'🍔','Platos Principales':'🥩','Guarniciones y Salsas':'🫙','Postres':'🍮','Vegetariano':'🥦','Principales':'🥩','Guarniciones':'🫙','Salsas':'🥄'};
+const CAT_COLORS={'Entrantes':'#c8a96e','Hamburguesas y Bocatas':'#c87d3e','Platos Principales':'#7095c8','Guarniciones y Salsas':'#6bab82','Postres':'#ab88c8','Vegetariano':'#c87070'};
+const CAT_ICONS={'Entrantes':'🥗','Hamburguesas y Bocatas':'🍔','Platos Principales':'🥩','Guarniciones y Salsas':'🫙','Postres':'🍮','Vegetariano':'🥦'};
 
 // ═══════ STORAGE ═══════
 const STORAGE_KEY='txoko_data_v4';
@@ -1815,11 +1966,11 @@ function logout(){
 function showTab(tab){
   currentTab=tab;
   document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['dashboard','flashcards','exam','repaso','stats'][i]===tab);
+    b.classList.toggle('active',['dashboard','flashcards','exam','repaso','stats','txoko'][i]===tab);
   });
   const c=document.getElementById('appContent');
   c.innerHTML='';
-  ({dashboard:renderDashboard,flashcards:renderFlashcards,exam:renderExam,repaso:renderRepaso,stats:renderStats})[tab]();
+  ({dashboard:renderDashboard,flashcards:renderFlashcards,exam:renderExam,repaso:renderRepaso,stats:renderStats,txoko:renderTxoko})[tab]();
 }
 
 // ═══════ DASHBOARD ═══════
@@ -2311,6 +2462,374 @@ function renderStats(){
 }
 
 renderLogin();
+
+// ═══════════════════════════════════════════════════
+//  🔥 TXOKO — MINIJUEGO
+// ═══════════════════════════════════════════════════
+
+// ── Constants ──────────────────────────────────────
+const TXOKO_LEVELS=[
+  {name:'Calma',    cls:'calma',    time:12},
+  {name:'Ritmo',    cls:'ritmo',    time:9},
+  {name:'Fuego',    cls:'fuego',    time:6},
+  {name:'Infierno', cls:'infierno', time:4},
+];
+const WAITER_MSGS={
+  allergens:[
+    d=>`Mesa 4 tiene una alergia — ¿qué alérgenos lleva <strong>${d}</strong>?`,
+    d=>`Mesa 7 pregunta por los alérgenos de <strong>${d}</strong>`,
+    d=>`Mesa 2: ¿Es apto para alérgicos? ¿Qué contiene <strong>${d}</strong>?`,
+    d=>`Mesa 9 pregunta: ¿tiene alérgenos <strong>${d}</strong>?`,
+  ],
+  cutlery:[
+    d=>`¿Cómo marcamos <strong>${d}</strong>?`,
+    d=>`Mesa 3 pide <strong>${d}</strong> — ¿qué cubiertos ponemos?`,
+    d=>`El jefe de sala pregunta: marcaje para <strong>${d}</strong>`,
+    d=>`¿Qué cubiertos necesita <strong>${d}</strong>?`,
+  ],
+  ingredients:[
+    d=>`Mesa 5 quiere saber qué lleva <strong>${d}</strong>`,
+    d=>`El cliente de mesa 6 pregunta los ingredientes de <strong>${d}</strong>`,
+    d=>`¿Qué ingredientes tiene <strong>${d}</strong>?`,
+    d=>`Mesa 1: ¿Qué lleva exactamente <strong>${d}</strong>?`,
+  ],
+  history:[
+    d=>`Mesa 8 quiere saber la historia de <strong>${d}</strong>`,
+    d=>`El cliente de mesa 2 pregunta por el origen de <strong>${d}</strong>`,
+    d=>`¿Qué le contamos al cliente sobre <strong>${d}</strong>?`,
+    d=>`Mesa 6 quiere saber el storytelling de <strong>${d}</strong>`,
+  ],
+};
+const WAITER_OK=['¡Perfecto, gracias! 🙌','¡Eso es! 👌','¡Correcto! 💪','¡Excelente! ⭐','¡Muy bien! 🎯'];
+const WAITER_KO=['¡Eso no es correcto! 😬','¡El cliente no está contento! 😤','¡Fallo! 😒','Error... el cliente llama al manager 😰'];
+
+let txokoState=null;
+let txokoTimer=null;
+
+// ── Core: normalize answer string ──────────────────
+function txNorm(s){
+  if(s===null||s===undefined) return '';
+  return String(s).trim().replace(/\.+$/,'').toLowerCase();
+}
+
+// ── Core: get answer for a dish+topicKey, language-stable ──
+// Returns raw string always in current LANG. Called ONCE per dish/topic pair.
+function txGetAnswer(dish, topicKey){
+  const dd = getDish(dish);
+  if(topicKey==='allergens'){
+    if(!dd.allergens||dd.allergens.length===0) return null;
+    return dd.allergens.map(allergenLocal).join(' · ');
+  }
+  if(topicKey==='cutlery'){
+    const c = cutleryLocal(dd.cutlery);
+    return (c && c.trim()) ? c : null;
+  }
+  if(topicKey==='ingredients'){
+    const v = dd.ingredients;
+    return (v && v.trim() && v!=='—') ? v : null;
+  }
+  if(topicKey==='history'){
+    const v = dd.history;
+    // reject placeholder strings
+    if(!v||v==='—'||v===t('noHistory')||txNorm(v)===txNorm(t('noHistory'))) return null;
+    return v;
+  }
+  return null;
+}
+
+// ── Core: truncate long strings for display ─────────
+function txTruncate(s, n){
+  if(!s) return s;
+  if(s.length<=n) return s;
+  // cut at last comma before limit
+  const cut = s.slice(0,n);
+  const lastComma = cut.lastIndexOf(',');
+  return (lastComma>20 ? cut.slice(0,lastComma) : cut) + '...';
+}
+
+// ── Core: build one question object ────────────────
+// Returns a fully sealed question or null if impossible.
+function txBuildQuestion(){
+  const topicKeys=['allergens','cutlery','ingredients','history'];
+
+  // Pre-compute all unique answers per topic so we know which are viable
+  // A topic is viable for a dish if there are at least 3 OTHER unique answers
+  function getUniqueAnswers(tk){
+    const seen=new Set();
+    DISHES.forEach(d=>{ const a=txGetAnswer(d,tk); if(a&&txNorm(a)) seen.add(txNorm(a)); });
+    return seen;
+  }
+
+  // Shuffle dishes and topics
+  const dishes = [...DISHES].sort(()=>Math.random()-.5);
+  const topics  = [...topicKeys].sort(()=>Math.random()-.5);
+
+  let chosenDish=null, chosenTopicKey=null, correctAnswer=null;
+
+  outer:
+  for(const tk of topics){
+    const allUnique = getUniqueAnswers(tk);
+    // Need at least 4 unique values total (1 correct + 3 distractors)
+    if(allUnique.size < 4) continue;
+    for(const d of dishes){
+      const ans = txGetAnswer(d, tk);
+      if(!ans || !txNorm(ans)) continue;
+      // Check this dish has at least 3 OTHER unique answers available
+      const othersUnique = new Set([...allUnique].filter(v=>v!==txNorm(ans)));
+      if(othersUnique.size >= 3){
+        chosenDish=d; chosenTopicKey=tk; correctAnswer=txNorm(ans);
+        break outer;
+      }
+    }
+  }
+  if(!chosenDish) return null;
+
+  // Build 3 unique wrong answers from same topic
+  const wrongDisplays=[];
+  const wrongNorms=new Set([correctAnswer]);
+  const wrongPool=[...DISHES].filter(x=>x.id!==chosenDish.id).sort(()=>Math.random()-.5);
+
+  for(const o of wrongPool){
+    if(wrongDisplays.length>=3) break;
+    const w = txGetAnswer(o, chosenTopicKey);
+    if(!w) continue;
+    const wn = txNorm(w);
+    if(!wn || wrongNorms.has(wn)) continue;
+    wrongNorms.add(wn);
+    wrongDisplays.push(
+      (chosenTopicKey==='ingredients'||chosenTopicKey==='history') ? txTruncate(w,90) : w
+    );
+  }
+  if(wrongDisplays.length<3) return null;
+
+  // Correct answer display (truncated if needed)
+  const rawCorrect = txGetAnswer(chosenDish, chosenTopicKey);
+  const correctDisplay = (chosenTopicKey==='ingredients'||chosenTopicKey==='history')
+    ? txTruncate(rawCorrect,90) : rawCorrect;
+
+  // Shuffle choices, preserve correctIdx
+  const pool=[
+    {display:correctDisplay, isCorrect:true},
+    ...wrongDisplays.map(w=>({display:w, isCorrect:false}))
+  ].sort(()=>Math.random()-.5);
+
+  const correctIdx = pool.findIndex(x=>x.isCorrect);
+  const choices = pool.map(x=>x.display);
+
+  const dd = getDish(chosenDish);
+  const topicObj = TOPICS.find(t=>t.key===chosenTopicKey);
+  const topicLabel = topicObj ? topicObj.label : chosenTopicKey;
+  const msgs = WAITER_MSGS[chosenTopicKey]||WAITER_MSGS.allergens;
+  const msgFn = msgs[Math.floor(Math.random()*msgs.length)];
+
+  return {
+    dishName:   dd.name,
+    topicKey:   chosenTopicKey,
+    topicLabel: topicLabel,
+    msg:        msgFn(dd.name),
+    choices:    choices,
+    correctIdx: correctIdx,
+    correctNorm:correctAnswer,
+  };
+}
+
+// ── Level helpers ───────────────────────────────────
+function txLevel(score){
+  if(score>=20) return TXOKO_LEVELS[3];
+  if(score>=10) return TXOKO_LEVELS[2];
+  if(score>=5)  return TXOKO_LEVELS[1];
+  return TXOKO_LEVELS[0];
+}
+
+// ── Render: home screen ─────────────────────────────
+function renderTxoko(){
+  const emp=getEmp(currentUser);
+  const record=emp.txokoRecord||0;
+  document.getElementById('appContent').innerHTML=`
+    <div class="txoko-wrap">
+      <div class="txoko-hero">
+        <div class="txoko-hero-icon">🍽️</div>
+        <div class="txoko-hero-title">Txoko</div>
+        <div class="txoko-hero-sub">Sobrevive al servicio</div>
+        <div class="txoko-record-box">
+          <div class="txoko-record-icon">🏆</div>
+          <div>
+            <div class="txoko-record-label">Tu récord</div>
+            <div class="txoko-record-val">${record} ${record===1?'comanda':'comandas'}</div>
+          </div>
+        </div>
+        <p style="font-size:.8rem;color:var(--parch2);margin-bottom:1.5rem;line-height:1.6">
+          El camarero te manda comandas. Responde antes de que el cliente se impaciente.<br>
+          <strong>3 errores y el servicio termina.</strong>
+        </p>
+        <button class="btn-primary" onclick="txStart()" style="width:100%">Comenzar servicio →</button>
+      </div>
+    </div>`;
+}
+
+// ── Game flow ────────────────────────────────────────
+function txStart(){
+  if(txokoTimer) clearInterval(txokoTimer);
+  txokoState={score:0,lives:3,streak:0,answered:false,question:null,
+    patienceMax:12,patienceLeft:12,startTime:Date.now()};
+  txNext();
+}
+
+function txNext(){
+  if(txokoTimer) clearInterval(txokoTimer);
+
+  // Build question — retry up to 20 times synchronously
+  let q=null;
+  for(let i=0;i<20;i++){ q=txBuildQuestion(); if(q) break; }
+  if(!q){ txGameOver(); return; }
+
+  const lvl=txLevel(txokoState.score);
+  txokoState.question=q;
+  txokoState.answered=false;
+  txokoState.patienceMax=lvl.time;
+  txokoState.patienceLeft=lvl.time;
+
+  txRender();
+  txokoTimer=setInterval(txTick,100);
+}
+
+function txTick(){
+  if(!txokoState||txokoState.answered) return;
+  txokoState.patienceLeft=Math.max(0,txokoState.patienceLeft-0.1);
+  const pct=txokoState.patienceLeft/txokoState.patienceMax*100;
+  const fill=document.getElementById('txokoPatienceFill');
+  const lbl=document.getElementById('txokoTimeLeft');
+  if(fill){
+    fill.style.width=pct+'%';
+    fill.style.background=pct>50?'#3d7a54':pct>25?'#e8a020':'#a84040';
+  }
+  if(lbl) lbl.textContent=Math.ceil(txokoState.patienceLeft)+'s';
+  if(txokoState.patienceLeft<=0){ clearInterval(txokoTimer); txAnswer(-1); }
+}
+
+// idx = 0-3 (choice index) or -1 (timeout)
+function txAnswer(idx){
+  if(!txokoState||txokoState.answered) return;
+  txokoState.answered=true;
+  clearInterval(txokoTimer);
+
+  const q=txokoState.question;
+  const timeout=(idx===-1);
+  const ok=!timeout && idx===q.correctIdx;
+
+  if(ok){ txokoState.score++; txokoState.streak++; }
+  else   { txokoState.lives--; txokoState.streak=0; }
+
+  // Highlight buttons using correctIdx — no string comparison needed
+  document.querySelectorAll('.txoko-choice').forEach((el,i)=>{
+    el.disabled=true;
+    if(i===q.correctIdx)          el.classList.add('correct');
+    else if(i===idx && !ok)       el.classList.add('wrong');
+  });
+
+  // Feedback message
+  const fb=document.getElementById('txokoFeedback');
+  const livesEl=document.getElementById('txokoLives');
+  const streakEl=document.getElementById('txokoStreak');
+  if(fb){
+    const msg=timeout?'⏱️ ¡Se acabó el tiempo!'
+      :ok?WAITER_OK[Math.floor(Math.random()*WAITER_OK.length)]
+         :WAITER_KO[Math.floor(Math.random()*WAITER_KO.length)];
+    fb.textContent=msg;
+    fb.className='txoko-feedback show '+(ok?'ok':'ko');
+  }
+  if(livesEl) livesEl.textContent='😠'.repeat(3-txokoState.lives)+'😊'.repeat(txokoState.lives);
+  if(streakEl) streakEl.textContent=txokoState.streak>1?`🔥 Racha x${txokoState.streak}`:'';
+
+  // Save record
+  const emp=getEmp(currentUser);
+  if(txokoState.score>(emp.txokoRecord||0)){ emp.txokoRecord=txokoState.score; saveDB(); }
+
+  if(txokoState.lives<=0) setTimeout(txGameOver,1200);
+  else setTimeout(txNext, ok?900:1400);
+}
+
+// ── Render: game screen ─────────────────────────────
+function txRender(){
+  const {question:q,lives,streak,score,patienceLeft,patienceMax}=txokoState;
+  const lvl=txLevel(score);
+  const letters=['A','B','C','D'];
+  const pct=patienceLeft/patienceMax*100;
+  const col=pct>50?'#3d7a54':pct>25?'#e8a020':'#a84040';
+
+  document.getElementById('appContent').innerHTML=`
+    <div class="txoko-game">
+      <div class="txoko-hud">
+        <span class="txoko-lives" id="txokoLives">${'😠'.repeat(3-lives)}${'😊'.repeat(lives)}</span>
+        <span class="txoko-streak" id="txokoStreak">${streak>1?'🔥 Racha x'+streak:''}</span>
+        <span class="txoko-score-hud">${score} <span class="txoko-diff ${lvl.cls}">${lvl.name}</span></span>
+      </div>
+      <div class="txoko-patience-wrap">
+        <div class="txoko-patience-label">
+          <span>⏱️ Paciencia del cliente</span>
+          <span id="txokoTimeLeft">${Math.ceil(patienceLeft)}s</span>
+        </div>
+        <div class="txoko-patience-track">
+          <div class="txoko-patience-fill" id="txokoPatienceFill" style="width:${pct}%;background:${col}"></div>
+        </div>
+      </div>
+      <div class="txoko-scene">
+        <div class="txoko-waiter">
+          <div class="txoko-waiter-avatar">🤵</div>
+          <div class="txoko-waiter-bubble">
+            ${q.msg}
+            <div><span class="txoko-dish-badge">📋 ${q.topicLabel}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="txoko-choices" id="txokoChoices">
+        ${q.choices.map((c,i)=>`
+          <button class="txoko-choice" onclick="txAnswer(${i})">
+            <span class="txoko-choice-letter">${letters[i]}.</span>${c}
+          </button>`).join('')}
+      </div>
+      <div class="txoko-feedback" id="txokoFeedback"></div>
+      <details style="margin-top:.75rem;font-size:.65rem;font-family:'DM Mono',monospace;color:var(--parch3);border:1px dashed var(--line);border-radius:var(--r2);padding:.5rem;">
+        <summary style="cursor:pointer;color:var(--gold)">🐛 Debug</summary>
+        <div style="margin-top:.5rem;line-height:1.8">
+          <div><b>Plato:</b> ${q.dishName}</div>
+          <div><b>Topic:</b> ${q.topicKey}</div>
+          <div><b>correctIdx:</b> ${q.correctIdx}</div>
+          <div><b>Respuesta correcta:</b> ${q.choices[q.correctIdx]}</div>
+          <div><b>Opciones:</b><br>${q.choices.map((c,i)=>`${i===q.correctIdx?'✓':'✗'} [${i}] ${c}`).join('<br>')}</div>
+        </div>
+      </details>
+    </div>`;
+}
+
+// ── Render: game over ───────────────────────────────
+function txGameOver(){
+  clearInterval(txokoTimer);
+  const emp=getEmp(currentUser);
+  const record=emp.txokoRecord||0;
+  const isRecord=txokoState.score>0&&txokoState.score>=record;
+  const elapsed=Math.round((Date.now()-txokoState.startTime)/1000);
+  const mins=Math.floor(elapsed/60), secs=elapsed%60;
+  const timeStr=mins>0?`${mins}m ${secs}s`:`${secs}s`;
+  const lvl=txLevel(txokoState.score);
+
+  document.getElementById('appContent').innerHTML=`
+    <div class="txoko-wrap">
+      <div class="txoko-gameover">
+        <div class="txoko-gameover-icon">${isRecord?'🏆':'😬'}</div>
+        <div class="txoko-gameover-title">${isRecord?'¡Nuevo récord!':'Servicio terminado'}</div>
+        <div class="txoko-gameover-sub">El camarero cierra el cuaderno...</div>
+        <div class="txoko-gameover-stats">
+          <div class="txoko-stat-card"><div class="txoko-stat-num">${txokoState.score}</div><div class="txoko-stat-lbl">Comandas</div></div>
+          <div class="txoko-stat-card"><div class="txoko-stat-num">${record}</div><div class="txoko-stat-lbl">Récord</div></div>
+          <div class="txoko-stat-card"><div class="txoko-stat-num">${timeStr}</div><div class="txoko-stat-lbl">Tiempo</div></div>
+          <div class="txoko-stat-card"><div class="txoko-stat-num"><span class="txoko-diff ${lvl.cls}">${lvl.name}</span></div><div class="txoko-stat-lbl">Nivel alcanzado</div></div>
+        </div>
+        <button class="btn-primary" onclick="txStart()" style="width:100%;margin-bottom:.75rem">Volver a intentarlo →</button>
+        <button class="btn-secondary" onclick="renderTxoko()" style="width:100%">Menú principal</button>
+      </div>
+    </div>`;
+}
 </script>
 <script>
 if('serviceWorker' in navigator){
