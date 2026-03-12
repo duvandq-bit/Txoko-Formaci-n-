@@ -1563,6 +1563,59 @@ function setLang(lang) {
   document.getElementById('loginEnterBtn').textContent = t('enterBtn');
   document.getElementById('newEmpInput').placeholder = t('inputPlaceholder');
   
+
+// ═══ CERTIFICACIONES POR CATEGORÍA ═══
+const CERT_THRESHOLD = 0.80; // 80% of dishes in category known = certified
+
+function getCertifications(emp){
+  const known = emp.knownDishes || {};
+  return CATS_ES.filter(cat => {
+    const dishes = DISHES.filter(d => d.cat === cat);
+    if(!dishes.length) return false;
+    const knownCount = dishes.filter(d => known[d.id]).length;
+    return knownCount / dishes.length >= CERT_THRESHOLD;
+  });
+}
+
+function checkNewCertifications(emp, oldKnown){
+  const oldCerts = getCertifications({knownDishes: oldKnown});
+  const newCerts = getCertifications(emp);
+  const fresh = newCerts.filter(c => !oldCerts.includes(c));
+  fresh.forEach(cat => showCertModal(cat));
+}
+
+function showCertModal(cat){
+  const icon = CAT_ICONS[cat] || '🏅';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease';
+  modal.innerHTML = `
+    <div style="background:var(--ink);border:2px solid var(--gold-a);border-radius:var(--r);padding:2.5rem 2rem;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);animation:scaleIn .4s cubic-bezier(.34,1.56,.64,1)">
+      <div style="font-size:3.5rem;margin-bottom:.5rem">${icon}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:.2em;margin-bottom:.5rem;opacity:.8">✦ ${LANG==='en'?'Certificate earned':'Certificado obtenido'} ✦</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.3rem;line-height:1.2">${LANG==='en'?'Expert in':'Experto en'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold);margin-bottom:.6rem;font-style:italic">${catLocal(cat)}</div>
+      <div style="font-size:.78rem;color:var(--parch2);margin-bottom:1.75rem;line-height:1.6">${LANG==='en'?'You\'ve mastered 80% or more of this category!':'¡Has dominado el 80% o más de esta categoría!'}</div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);border:none;border-radius:30px;padding:.7rem 2rem;font-family:'Jost',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;letter-spacing:.05em">
+        ${LANG==='en'?'Excellent! 🎖️':'¡Excelente! 🎖️'}
+      </button>
+    </div>`;
+  playSound('levelup');
+  document.body.appendChild(modal);
+  // Award XP for certification
+  setTimeout(()=> awardXP(50, LANG==='en'?`${catLocal(cat)} certified 🎖️`:`Certificado ${catLocal(cat)} 🎖️`), 500);
+}
+
+function renderCertBadges(emp){
+  const certs = getCertifications(emp);
+  if(!certs.length) return '';
+  return `<div style="margin-top:.75rem">
+    <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem;opacity:.8">${LANG==='en'?'Certifications':'Certificados'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+      ${certs.map(cat=>`<span title="${catLocal(cat)}" style="display:inline-flex;align-items:center;gap:.3rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:20px;padding:.25rem .65rem;font-size:.7rem;color:var(--gold);font-family:'Jost',sans-serif;font-weight:500">${CAT_ICONS[cat]||'🏅'} ${catLocal(cat)}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
 // ═══ RANKING (visible to all) ═══
 function renderRanking(){
   const c = document.getElementById('appContent');
@@ -1686,6 +1739,9 @@ function renderSupDashboard(){
     if(remoteEmps && remoteEmps.length) remoteEmps.forEach(e => { allEmps[e.name] = e; });
     Object.keys(DB.employees).forEach(name => { if(name) allEmps[name] = DB.employees[name]; });
     const empNames = Object.keys(allEmps).filter(n => n !== '');
+    // Expose globally so supervisor action buttons can access them
+    window._supAllEmps = allEmps;
+    window._supEmpNames = empNames;
     if(empNames.length === 0){
       document.getElementById('appContent').innerHTML=`<div class="sup-wrap"><div style="text-align:center;padding:2rem;color:var(--parch3)">${LANG==='en'?'No employees yet.':'Sin empleados todavía.'}</div></div>`;
       return;
@@ -1724,6 +1780,7 @@ function renderSupDashboard(){
           <div style="flex:1">
             <div class="sup-emp-name">${name}${isCloud?` <span style="font-size:.55rem;color:var(--gold);font-family:'DM Mono',monospace;opacity:.7">☁️</span>`:''}</div>
             <div style="font-size:.65rem;color:var(--parch3)">${lvl.icon} ${lvl.title} · Nv.${lvl.level}</div>
+            ${getCertifications(emp).map(c=>`<span title="${catLocal(c)}" style="font-size:.65rem">${CAT_ICONS[c]||'🏅'}</span>`).join('')}
           </div>
           <span class="sup-emp-level">${activityLabel}</span>
         </div>
@@ -1771,16 +1828,471 @@ function renderSupDashboard(){
           <div class="stat-tile"><div class="stat-num">${totalEmp}</div><div class="stat-lbl">${LANG==='en'?'Staff':'Equipo'}</div></div>
           <div class="stat-tile"><div class="stat-num">${studiedToday}</div><div class="stat-lbl">${LANG==='en'?'Active today':'Hoy activos'}</div></div>
           <div class="stat-tile"><div class="stat-num">${avgXP.toLocaleString()}</div><div class="stat-lbl">${LANG==='en'?'Avg XP':'XP medio'}</div></div>
+          <div class="stat-tile" style="${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length>0?'border-color:rgba(168,64,64,.3)':''}">
+            <div class="stat-num" style="color:${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length>0?'var(--rose)':'var(--sage)'}">
+              ${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length}
+            </div>
+            <div class="stat-lbl">${LANG==='en'?'Inactive':'Inactivos'}</div>
+          </div>
         </div>
         ${renderWeeklyChallenge()}
+        ${(()=>{
+          // Inactivity alerts — employees with 3+ days without studying
+          const inactive = empNames.filter(n => {
+            const last = allEmps[n].lastStudyDay || '';
+            if(!last) return true;
+            const diff = Math.floor((new Date(todayStr()) - new Date(last)) / 86400000);
+            return diff >= 3;
+          });
+          if(!inactive.length) return '';
+          return `<div style="background:rgba(168,64,64,.08);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.9rem 1rem;margin-bottom:1rem">
+            <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--rose);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">⚠️ ${LANG==='en'?'Inactive 3+ days':'Sin actividad 3+ días'}</div>
+            ${inactive.map(n => {
+              const last = allEmps[n].lastStudyDay || '';
+              const diff = last ? Math.floor((new Date(todayStr()) - new Date(last)) / 86400000) : null;
+              const label = diff===null?(LANG==='en'?'Never':'Nunca'):diff===1?(LANG==='en'?'Yesterday':'Ayer'):`${diff}d`;
+              const urgency = diff===null||diff>=7 ? 'var(--rose)' : 'var(--gold)';
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid rgba(168,64,64,.1)">
+                <span style="font-size:.82rem;color:var(--parchment)">${n}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:${urgency};font-weight:600">${label}</span>
+              </div>`;
+            }).join('')}
+          </div>`;
+        })()}
         <div class="section-eyebrow">${LANG==='en'?'Individual progress':'Progreso individual'}</div>
         ${cards}
-        <div style="display:flex;gap:.5rem;margin-top:.5rem">
-          <button class="btn-secondary" onclick="renderCartaEditor()" style="flex:1">✏️ ${LANG==='en'?'Edit menu':'Editar carta'}</button>
-          <button class="btn-secondary" onclick="supAuthenticated=false;showTab('dashboard')" style="flex:1">${LANG==='en'?'Exit panel':'Salir del panel'}</button>
+        <div style="border-top:1px solid var(--line);margin-top:1.25rem;padding-top:1.25rem">
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem">Herramientas de supervisor</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+            <button onclick="renderCartaEditor()" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">✏️</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Editar carta</span>
+            </button>
+            <button onclick="renderSupAnalytics(_supAllEmps,_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📊</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Analytics</span>
+            </button>
+            <button onclick="renderSupNotifSender(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📣</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Enviar aviso</span>
+            </button>
+            <button onclick="renderLiveQuizHost(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">🎯</span>
+              <span style="font-size:.72rem;font-weight:600;color:var(--gold)">Quiz en vivo</span>
+            </button>
+          </div>
+          <button onclick="supAuthenticated=false;showTab('dashboard')" style="width:100%;padding:.65rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.78rem;color:var(--parch3);cursor:pointer;letter-spacing:.04em">
+            ${LANG==='en'?'← Exit panel':'← Salir del panel'}
+          </button>
         </div>
       </div>`;
   });
+}
+
+// ═══ ANALYTICS ═══
+function renderSupAnalytics(allEmps, empNames){
+  const c = document.getElementById('appContent');
+
+  // Compute team-wide stats
+  const totalExams = empNames.reduce((a,n)=>(a+(allEmps[n].sessions||[]).length),0);
+  const avgAccByWeek = {}; // week → {correct,total}
+
+  empNames.forEach(n => {
+    (allEmps[n].sessions||[]).forEach(s => {
+      if(!s.ts) return;
+      const d = new Date(s.ts);
+      const week = `${d.getFullYear()}-W${String(Math.ceil((d.getDate()+new Date(d.getFullYear(),d.getMonth(),1).getDay())/7)).padStart(2,'0')}`;
+      if(!avgAccByWeek[week]) avgAccByWeek[week] = {correct:0,total:0};
+      avgAccByWeek[week].correct += s.score||0;
+      avgAccByWeek[week].total += s.total||0;
+    });
+  });
+
+  const weeks = Object.keys(avgAccByWeek).sort().slice(-8);
+  const maxBar = 120;
+  const weekBars = weeks.map(w => {
+    const {correct,total} = avgAccByWeek[w];
+    const pct = total ? Math.round(correct/total*100) : 0;
+    const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+    const label = w.split('-W')[1] ? `S${w.split('-W')[1]}` : w;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1">
+      <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch3)">${pct}%</div>
+      <div style="width:100%;background:var(--ink3);border-radius:4px 4px 0 0;height:${maxBar}px;display:flex;align-items:flex-end">
+        <div style="width:100%;background:${col};border-radius:4px 4px 0 0;height:${Math.round(pct/100*maxBar)}px;transition:height .5s ease"></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--parch4)">${label}</div>
+    </div>`;
+  }).join('');
+
+  // Dish mastery — which dishes nobody knows
+  const dishKnown = {};
+  DISHES.forEach(d => { dishKnown[d.id] = 0; });
+  empNames.forEach(n => {
+    Object.entries(allEmps[n].knownDishes||{}).forEach(([id,v]) => { if(v) dishKnown[id] = (dishKnown[id]||0)+1; });
+  });
+  const total = empNames.length || 1;
+  const hardest = DISHES.map(d => ({name:d.name, cat:d.cat, pct:Math.round((dishKnown[d.id]||0)/total*100)}))
+    .sort((a,b)=>a.pct-b.pct).slice(0,8);
+  const hardestRows = hardest.map(d => {
+    const col = d.pct>=80?'var(--sage)':d.pct>=50?'var(--gold)':'var(--rose)';
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.78rem;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${d.cat}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem">
+        <div style="width:60px;background:var(--ink3);border-radius:4px;height:6px">
+          <div style="width:${d.pct}%;background:${col};border-radius:4px;height:6px"></div>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:${col};width:28px;text-align:right">${d.pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Top improver — most XP gained this week (approximate from streak)
+  const sorted = empNames.slice().sort((a,b)=>(allEmps[b].xp||0)-(allEmps[a].xp||0));
+  const leaderRows = sorted.slice(0,5).map((n,i)=>{
+    const emp = allEmps[n];
+    const lvl = getLevelInfo(emp.xp||0);
+    const certs = getCertifications(emp);
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem 0;border-bottom:1px solid var(--line)">
+      <span style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--parch4);width:16px">${i+1}</span>
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--ink3);border:1px solid var(--gold-a);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.85rem;color:var(--gold)">${n[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-size:.8rem;color:var(--parchment)">${n} ${certs.map(c=>CAT_ICONS[c]||'🏅').join('')}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${lvl.icon} Nv.${lvl.level} · ${(emp.sessions||[]).length} exámenes</div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--gold)">${(emp.xp||0).toLocaleString()} XP</span>
+    </div>`;
+  }).join('');
+
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">📊 Analytics del equipo</div>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:1rem">
+      <div class="stat-tile"><div class="stat-num">${empNames.length}</div><div class="stat-lbl">Empleados</div></div>
+      <div class="stat-tile"><div class="stat-num">${totalExams}</div><div class="stat-lbl">Exámenes totales</div></div>
+      <div class="stat-tile"><div class="stat-num">${Math.round(empNames.reduce((a,n)=>(a+(allEmps[n].xp||0)),0)/Math.max(1,empNames.length)).toLocaleString()}</div><div class="stat-lbl">XP medio</div></div>
+    </div>
+
+    ${weeks.length ? `
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem">Precisión del equipo por semana</div>
+      <div style="display:flex;gap:.3rem;align-items:flex-end;height:${maxBar+40}px">${weekBars}</div>
+    </div>` : ''}
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Platos menos dominados</div>
+      ${hardestRows}
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Ranking XP</div>
+      ${leaderRows}
+    </div>
+  </div>`;
+}
+
+// ═══ ENVIAR AVISO / NOTIFICACIÓN ═══
+function renderSupNotifSender(empNames){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">📣 Enviar aviso al equipo</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Destinatario</div>
+      <select id="notifTarget" style="width:100%;padding:.6rem .8rem;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);background:#fff">
+        <option value="all">📢 Todo el equipo</option>
+        ${empNames.filter(n=>n!=='Duvan').map(n=>`<option value="${n}">${n}</option>`).join('')}
+      </select>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Tipo</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        ${[['info','📣','Aviso'],['warning','⚠️','Atención'],['success','✅','Felicitación'],['urgent','🚨','Urgente']].map(([v,icon,lbl])=>`
+          <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;padding:.4rem .7rem;border:1px solid var(--line);border-radius:20px;font-size:.78rem">
+            <input type="radio" name="notifType" value="${v}" ${v==='info'?'checked':''}> ${icon} ${lbl}
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Mensaje</div>
+      <textarea id="notifMsg" rows="4" placeholder="Escribe el aviso para tu equipo..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div id="notifQuickBtns" style="margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">Mensajes rápidos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+        ${[
+          'Recordad repasar los alérgenos antes del servicio 🍽️',
+          'Buen trabajo esta semana, seguid así 💪',
+          'Mañana hay cambio en la carta, actualizad la app 📋',
+          'Recordad el briefing de hoy a las 19:00 ⏰'
+        ].map(msg=>`<button onclick="document.getElementById('notifMsg').value=\`${msg}\`" style="background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:.3rem .7rem;font-family:'Jost',sans-serif;font-size:.72rem;color:var(--parch2);cursor:pointer">${msg.slice(0,35)}…</button>`).join('')}
+      </div>
+    </div>
+    <button onclick="sendNotification()" class="btn-primary" style="width:100%;padding:.85rem">📣 Enviar aviso</button>
+    <div id="notifSendMsg" style="text-align:center;margin-top:.5rem;font-size:.75rem;color:var(--sage);font-family:'DM Mono',monospace;display:none">✓ Aviso enviado</div>
+  </div>`;
+}
+
+async function sendNotification(){
+  const target = document.getElementById('notifTarget')?.value || 'all';
+  const msg = document.getElementById('notifMsg')?.value.trim();
+  const type = document.querySelector('input[name="notifType"]:checked')?.value || 'info';
+  if(!msg) return;
+  await supaCreateNotification(target, msg, type);
+  const el = document.getElementById('notifSendMsg');
+  if(el){ el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
+  document.getElementById('notifMsg').value = '';
+}
+
+// ═══ QUIZ EN VIVO ═══
+async function supaCreateLiveSession(questions){
+  try {
+    const code = Math.floor(1000+Math.random()*9000).toString();
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json', 'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ code, questions: JSON.stringify(questions), current_q: 0, state: 'waiting', answers: '{}', created_at: new Date().toISOString() })
+    });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows[0] || null;
+  } catch(e){ return null; }
+}
+
+async function supaGetLiveSession(code){
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions?code=eq.${code}&select=*`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows[0] || null;
+  } catch(e){ return null; }
+}
+
+async function supaUpdateLiveSession(code, patch){
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/live_sessions?code=eq.${code}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch)
+    });
+  } catch(e){}
+}
+
+async function supaSubmitLiveAnswer(code, name, qIdx, answer){
+  try {
+    const sess = await supaGetLiveSession(code);
+    if(!sess) return;
+    const answers = JSON.parse(sess.answers||'{}');
+    if(!answers[qIdx]) answers[qIdx] = {};
+    answers[qIdx][name] = answer;
+    await supaUpdateLiveSession(code, { answers: JSON.stringify(answers) });
+  } catch(e){}
+}
+
+let liveQuizInterval = null;
+
+function renderLiveQuizHost(empNames){
+  // Build 5 random questions
+  const pool = DISHES.sort(()=>Math.random()-.5).slice(0,5);
+  const questions = pool.map(d => {
+    const topic = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+    const correct = (topic.a(d)||'').trim();
+    const wrongs = DISHES.filter(x=>x.id!==d.id).sort(()=>Math.random()-.5).slice(0,3).map(x=>(topic.a(x)||'').trim()).filter(w=>w&&w!==correct);
+    const choices = [correct,...wrongs.slice(0,3)].sort(()=>Math.random()-.5);
+    return { dish: d.name, topic: topic.label, correct, choices, correctIdx: choices.indexOf(correct) };
+  });
+
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="stopLiveQuiz();renderSupDashboard();" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">🎯 Quiz en vivo</div>
+    </div>
+    <div id="liveQuizHostContent">
+      <div style="text-align:center;padding:2rem;color:var(--parch3);font-family:'DM Mono',monospace;font-size:.72rem">⏳ Creando sesión...</div>
+    </div>
+  </div>`;
+
+  supaCreateLiveSession(questions).then(sess => {
+    if(!sess){ document.getElementById('liveQuizHostContent').innerHTML='<div style="color:var(--rose);text-align:center;padding:1rem">Error al crear sesión. Verifica la tabla live_sessions en Supabase.</div>'; return; }
+    const code = sess.code;
+    document.getElementById('liveQuizHostContent').innerHTML = `
+      <div style="text-align:center;background:var(--gold-b);border:2px solid var(--gold-a);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem">Código de sesión</div>
+        <div style="font-family:'Playfair Display',serif;font-size:3rem;color:var(--gold);letter-spacing:.15em;font-weight:700">${code}</div>
+        <div style="font-size:.75rem;color:var(--parch3);margin-top:.4rem">Los empleados introducen este código en la app</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:1rem;margin-bottom:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.5rem">Participantes conectados</div>
+        <div id="liveParticipants" style="font-size:.82rem;color:var(--parch3);font-style:italic">Esperando...</div>
+      </div>
+      <div id="liveQuizProgress" style="margin-bottom:1rem"></div>
+      <div style="display:flex;gap:.5rem">
+        <button onclick="advanceLiveQuiz('${code}',${JSON.stringify(questions).replace(/'/g,"\'")})" id="liveNextBtn" class="btn-primary" style="flex:1">▶ Iniciar quiz</button>
+        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" class="btn-secondary">✕ Terminar</button>
+      </div>`;
+
+    // Poll for participants
+    liveQuizInterval = setInterval(async () => {
+      const s = await supaGetLiveSession(code);
+      if(!s) return;
+      const answers = JSON.parse(s.answers||'{}');
+      const participants = [...new Set(Object.values(answers).flatMap(q=>Object.keys(q)))];
+      const pEl = document.getElementById('liveParticipants');
+      if(pEl) pEl.innerHTML = participants.length
+        ? participants.map(p=>`<span style="display:inline-block;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:20px;padding:.2rem .6rem;font-size:.75rem;color:var(--gold);margin:.15rem">${p} ✓</span>`).join('')
+        : '<span style="color:var(--parch3);font-style:italic">Esperando participantes...</span>';
+
+      // Show current question results
+      const qIdx = s.current_q;
+      if(qIdx > 0 && answers[qIdx-1]) {
+        const q = questions[qIdx-1];
+        const qAnswers = answers[qIdx-1];
+        const correctCount = Object.values(qAnswers).filter(a=>a===q.correct).length;
+        const total = Object.values(qAnswers).length;
+        const pEl2 = document.getElementById('liveQuizProgress');
+        if(pEl2 && q) pEl2.innerHTML = `<div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:.85rem 1rem">
+          <div style="font-size:.78rem;color:var(--parch3);margin-bottom:.35rem">Pregunta ${qIdx}: ${q.dish} — ${q.topic}</div>
+          <div style="font-size:.85rem;color:var(--parchment);margin-bottom:.5rem">Respuesta correcta: <strong>${q.correct}</strong></div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:${correctCount/Math.max(1,total)>=.7?'var(--sage)':'var(--rose)'}">✓ ${correctCount}/${total} correctos</div>
+        </div>`;
+      }
+    }, 2500);
+  });
+}
+
+let liveCurrentQ = 0;
+async function advanceLiveQuiz(code, questions){
+  if(liveCurrentQ >= questions.length){
+    await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
+    stopLiveQuiz();
+    alert('¡Quiz terminado! Revisa los resultados en la pantalla.');
+    return;
+  }
+  await supaUpdateLiveSession(code, { state: 'active', current_q: liveCurrentQ });
+  liveCurrentQ++;
+  const btn = document.getElementById('liveNextBtn');
+  if(btn) btn.textContent = liveCurrentQ >= questions.length ? '🏁 Finalizar quiz' : `▶ Pregunta ${liveCurrentQ+1} de ${questions.length}`;
+}
+
+function stopLiveQuiz(){
+  if(liveQuizInterval){ clearInterval(liveQuizInterval); liveQuizInterval=null; }
+  liveCurrentQ = 0;
+}
+
+// ═══ PARTICIPAR EN QUIZ EN VIVO (vista empleado) ═══
+function renderJoinLiveQuiz(){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:1.5rem 1rem">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="showTab('dashboard')" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">🎯 Unirse al quiz</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">Código de sesión</div>
+      <input id="liveCode" maxlength="4" placeholder="1234" inputmode="numeric" style="width:100%;text-align:center;font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--gold);border:2px solid var(--gold-a);border-radius:var(--r2);padding:.6rem;letter-spacing:.3em;background:var(--gold-b)">
+    </div>
+    <button onclick="joinLiveQuiz()" class="btn-primary" style="width:100%;padding:.85rem">Unirse →</button>
+    <div id="liveJoinError" style="text-align:center;color:var(--rose);font-size:.75rem;margin-top:.5rem;display:none">Código no encontrado o sesión terminada</div>
+  </div>`;
+}
+
+let livePlayerInterval = null;
+let livePlayerLastQ = -1;
+
+async function joinLiveQuiz(){
+  const code = document.getElementById('liveCode')?.value.trim();
+  if(!code || code.length < 4) return;
+  const sess = await supaGetLiveSession(code);
+  if(!sess || sess.state === 'ended'){
+    const el = document.getElementById('liveJoinError');
+    if(el) el.style.display='block';
+    return;
+  }
+  livePlayerLastQ = -1;
+  renderLiveQuizWaiting(code, JSON.parse(sess.questions||'[]'));
+}
+
+function renderLiveQuizWaiting(code, questions){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:2rem 1rem;text-align:center">
+    <div style="font-size:3rem;margin-bottom:1rem">⏳</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--parchment);margin-bottom:.5rem">Conectado</div>
+    <div style="font-size:.8rem;color:var(--parch3);margin-bottom:.5rem">Esperando al supervisor...</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);letter-spacing:.15em">Código: ${code}</div>
+    <div id="livePlayerContent" style="margin-top:1.5rem"></div>
+  </div>`;
+
+  if(livePlayerInterval) clearInterval(livePlayerInterval);
+  livePlayerInterval = setInterval(async () => {
+    const sess = await supaGetLiveSession(code);
+    if(!sess) return;
+    if(sess.state === 'ended'){ clearInterval(livePlayerInterval); renderLiveQuizPlayerEnd(code, questions, JSON.parse(sess.answers||'{}')); return; }
+    if(sess.state === 'active' && sess.current_q !== livePlayerLastQ){
+      livePlayerLastQ = sess.current_q;
+      const qIdx = sess.current_q - 1;
+      if(qIdx >= 0 && qIdx < questions.length) renderLiveQuizQuestion(code, questions, qIdx, JSON.parse(sess.answers||'{}'));
+    }
+  }, 2000);
+}
+
+function renderLiveQuizQuestion(code, questions, qIdx, existingAnswers){
+  const q = questions[qIdx];
+  const myAnswer = existingAnswers[qIdx]?.[currentUser];
+  const pEl = document.getElementById('livePlayerContent') || document.getElementById('appContent');
+  pEl.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;text-align:left">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);margin-bottom:.3rem">Pregunta ${qIdx+1} de ${questions.length} · ${q.topic}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment);margin-bottom:1rem">${q.dish}</div>
+      ${q.choices.map((ch,i)=>`
+        <button onclick="submitLiveAnswer('${code}',${JSON.stringify(questions)},${qIdx},'${ch.replace(/'/g,"\'")}')"
+          style="width:100%;text-align:left;padding:.75rem 1rem;margin-bottom:.4rem;border:2px solid ${myAnswer===ch?(ch===q.correct?'var(--sage)':'var(--rose)'):'var(--line)'};border-radius:var(--r2);background:${myAnswer===ch?(ch===q.correct?'rgba(61,122,84,.1)':'rgba(168,64,64,.08)'):'#fff'};font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);cursor:pointer;transition:all .2s"
+          ${myAnswer?'disabled':''}>
+          ${String.fromCharCode(65+i)}. ${ch}
+        </button>`).join('')}
+      ${myAnswer?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3);margin-top:.5rem">Respuesta enviada · Espera la siguiente pregunta</div>`:''}
+    </div>`;
+}
+
+async function submitLiveAnswer(code, questions, qIdx, answer){
+  await supaSubmitLiveAnswer(code, currentUser, qIdx, answer);
+  const sess = await supaGetLiveSession(code);
+  if(sess) renderLiveQuizQuestion(code, questions, qIdx, JSON.parse(sess.answers||'{}'));
+}
+
+function renderLiveQuizPlayerEnd(code, questions, answers){
+  if(livePlayerInterval){ clearInterval(livePlayerInterval); livePlayerInterval=null; }
+  let correct = 0;
+  questions.forEach((q,i)=>{ if(answers[i]?.[currentUser]===q.correct) correct++; });
+  const pct = Math.round(correct/questions.length*100);
+  const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+  awardXP(correct*5, '🎯 Quiz en vivo');
+  document.getElementById('appContent').innerHTML = `<div style="max-width:420px;margin:0 auto;padding:2rem 1rem;text-align:center">
+    <div style="font-size:3rem;margin-bottom:.75rem">${pct>=80?'🏆':pct>=50?'👍':'💪'}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.25rem">Quiz terminado</div>
+    <div style="font-size:2.5rem;font-family:'Playfair Display',serif;color:${col};margin:.5rem 0">${pct}%</div>
+    <div style="font-size:.82rem;color:var(--parch3);margin-bottom:1.5rem">${correct} de ${questions.length} correctas · +${correct*5} XP</div>
+    ${questions.map((q,i)=>{
+      const mine = answers[i]?.[currentUser];
+      const ok = mine===q.correct;
+      return `<div style="background:#fff;border:1px solid ${ok?'rgba(61,122,84,.3)':'rgba(168,64,64,.2)'};border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:.4rem;text-align:left">
+        <div style="font-size:.8rem;color:var(--parchment)">${ok?'✅':'❌'} ${q.dish}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--parch4);margin-top:.2rem">${mine||'Sin respuesta'} ${!ok?'→ '+q.correct:''}</div>
+      </div>`;
+    }).join('')}
+    <button onclick="showTab('dashboard')" class="btn-primary" style="width:100%;margin-top:1rem">Volver al inicio</button>
+  </div>`;
 }
 
 // ═══ CARTA EDITOR ═══
@@ -1800,7 +2312,8 @@ function renderCartaEditor(){
       </select>
     </div>
     <div id="cartaDishList"></div>
-    <button class="btn-secondary" onclick="renderSupDashboard()" style="width:100%;margin-top:.75rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
+    <button onclick="renderCartaNewDish()" style="width:100%;padding:.8rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.85rem;font-weight:600;color:var(--gold);cursor:pointer;margin-bottom:.5rem">+ ${LANG==='en'?'Add new dish':'Añadir nuevo plato'}</button>
+    <button class="btn-secondary" onclick="renderSupDashboard()" style="width:100%;margin-top:.25rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
   </div>`;
   renderCartaList();
 }
@@ -1870,15 +2383,119 @@ function saveCartaDish(id){
     overrides[id] = {allergens:d.allergens,cutlery:d.cutlery,ingredients:d.ingredients,history:d.history,notes:d.notes};
     localStorage.setItem('txoko_carta_overrides', JSON.stringify(overrides));
   } catch(e){}
+  // If it's a custom dish (added by supervisor), sync to Supabase
+  try {
+    const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    if(newIds.find(x=>x.id===id)) supaUpsertCustomDish(d);
+  } catch(e){}
   const msg = document.getElementById('cartaSaveMsg');
   if(msg){ msg.style.display='block'; setTimeout(()=>msg.style.display='none',2000); }
+}
+
+// ═══ NUEVO PLATO ═══
+function renderCartaNewDish(){
+  const cats = [...new Set(DISHES.map(d=>d.cat))];
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="renderCartaEditor()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">${LANG==='en'?'New dish':'Nuevo plato'}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Nombre *</div>
+      <input id="newDishName" type="text" placeholder="Ej: Tartar de atún" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);box-sizing:border-box">
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Categoría *</div>
+      <select id="newDishCat" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);background:#fff">
+        ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        <option value="__nueva__">+ ${LANG==='en'?'New category':'Nueva categoría'}...</option>
+      </select>
+      <input id="newDishCatCustom" type="text" placeholder="${LANG==='en'?'Category name':'Nombre de categoría'}" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);box-sizing:border-box;margin-top:.5rem;display:none">
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Alérgenos</div>
+      <textarea id="newDishAllergens" rows="2" placeholder="Ej: Gluten, Lácteos, Huevo" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Marcaje</div>
+      <textarea id="newDishCutlery" rows="2" placeholder="Ej: Cuchara sopera, tenedor de pescado" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Ingredientes</div>
+      <textarea id="newDishIngredients" rows="4" placeholder="Ingredientes principales..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Historia / Storytelling</div>
+      <textarea id="newDishHistory" rows="4" placeholder="Historia o descripción del plato..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div id="newDishError" style="color:var(--rose);font-size:.75rem;font-family:'DM Mono',monospace;margin-bottom:.5rem;display:none"></div>
+    <button onclick="saveNewDish()" class="btn-primary" style="width:100%;padding:.85rem">💾 ${LANG==='en'?'Add dish':'Añadir plato'}</button>
+  </div>`;
+
+  // Show/hide custom category input
+  setTimeout(()=>{
+    const sel = document.getElementById('newDishCat');
+    const inp = document.getElementById('newDishCatCustom');
+    if(sel&&inp) sel.addEventListener('change', ()=>{
+      inp.style.display = sel.value==='__nueva__' ? 'block' : 'none';
+    });
+  }, 100);
+}
+
+function saveNewDish(){
+  const name = document.getElementById('newDishName')?.value.trim();
+  const catSel = document.getElementById('newDishCat')?.value;
+  const catCustom = document.getElementById('newDishCatCustom')?.value.trim();
+  const cat = catSel==='__nueva__' ? catCustom : catSel;
+  const errEl = document.getElementById('newDishError');
+
+  if(!name){ if(errEl){errEl.textContent='⚠️ El nombre es obligatorio';errEl.style.display='block';} return; }
+  if(!cat){ if(errEl){errEl.textContent='⚠️ Selecciona o escribe una categoría';errEl.style.display='block';} return; }
+  if(errEl) errEl.style.display='none';
+
+  const allergens = (document.getElementById('newDishAllergens')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const cutlery = (document.getElementById('newDishCutlery')?.value||'').trim();
+  const ingredients = (document.getElementById('newDishIngredients')?.value||'').trim();
+  const history = (document.getElementById('newDishHistory')?.value||'').trim();
+
+  // Generate new unique ID
+  const newId = Math.max(0, ...DISHES.map(d=>d.id)) + 1;
+
+  const newDish = { id: newId, name, cat, allergens, cutlery, ingredients, history, notes: null };
+  DISHES.push(newDish);
+
+  // Persist locally
+  try {
+    const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    newIds.push(newDish);
+    localStorage.setItem('txoko_new_dishes', JSON.stringify(newIds));
+  } catch(e){}
+  // Sync to Supabase
+  supaUpsertCustomDish(newDish);
+
+  // Confirm toast
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;padding:.55rem 1.3rem;border-radius:30px;font-family:Jost,sans-serif;font-size:.82rem;font-weight:600;z-index:9999;white-space:nowrap';
+  toast.textContent = '✓ ' + (LANG==='en'?`"${name}" added`:`"${name}" añadido`);
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2500);
+
+  renderCartaEditor();
 }
 
 // Load carta overrides on startup
 function loadCartaOverrides(){
   try {
+    // Load new dishes added by supervisor
+    const newDishes = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    newDishes.forEach(d => {
+      if(d && d.id && !DISHES.find(x=>x.id===d.id)) DISHES.push(d);
+    });
+    // Load edits to existing dishes
     const overrides = JSON.parse(localStorage.getItem('txoko_carta_overrides')||'{}');
     Object.entries(overrides).forEach(([id,data])=>{
+      if(id.startsWith('new_')) return; // already loaded above
       const d = DISHES.find(x=>x.id===parseInt(id));
       if(d){ Object.assign(d,data); }
     });
@@ -2682,6 +3299,209 @@ async function supaFetchAllEmployees() {
   } catch(e) { return null; }
 }
 
+
+// ═══ SUPABASE — NOTIFICACIONES ═══
+async function supaFetchNotifications(name) {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/notifications?select=*&or=(target.eq.all,target.eq.${encodeURIComponent(name)})&read.eq.false&order=created_at.desc&limit=10`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+    );
+    if(!res.ok) return [];
+    return await res.json();
+  } catch(e) { return []; }
+}
+
+async function supaCreateNotification(target, message, type='info') {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ target, message, type, read: false })
+    });
+  } catch(e) {}
+}
+
+async function supaMarkNotifRead(id) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/notifications?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ read: true })
+    });
+  } catch(e) {}
+}
+
+// Request browser notification permission
+async function requestNotifPermission() {
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied') return false;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+// Show browser notification
+function showBrowserNotif(title, body, icon='✦') {
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon: '/favicon.ico', badge: '/favicon.ico', tag: 'txoko' });
+  } catch(e) {}
+}
+
+// Check for new notifications on login + show them
+async function checkAndShowNotifications(name) {
+  const notifs = await supaFetchNotifications(name);
+  if(!notifs.length) return;
+  // Show in-app notification bell badge
+  updateNotifBadge(notifs.length);
+  // Show browser notification for first unread
+  const first = notifs[0];
+  showBrowserNotif('TXOKO · Notificación', first.message);
+}
+
+function updateNotifBadge(count) {
+  let badge = document.getElementById('notifBadge');
+  if(!badge) {
+    const btn = document.createElement('button');
+    btn.id = 'notifBell';
+    btn.onclick = () => renderNotifPanel();
+    btn.style.cssText = 'position:fixed;top:12px;right:52px;background:transparent;border:none;font-size:1.3rem;cursor:pointer;z-index:900;padding:4px';
+    btn.innerHTML = '🔔<span id="notifBadge" style="position:absolute;top:2px;right:2px;background:var(--rose);color:#fff;border-radius:50%;width:14px;height:14px;font-size:.55rem;font-family:Jost,sans-serif;font-weight:700;display:flex;align-items:center;justify-content:center"></span>';
+    document.body.appendChild(btn);
+    badge = document.getElementById('notifBadge');
+  }
+  badge.textContent = count > 9 ? '9+' : count;
+  badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+async function renderNotifPanel() {
+  const notifs = await supaFetchNotifications(currentUser);
+  const overlay = document.createElement('div');
+  overlay.id = 'notifOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;justify-content:flex-end;align-items:flex-start';
+  const typeIcon = t => t==='warning'?'⚠️':t==='success'?'✅':t==='urgent'?'🚨':'📣';
+  overlay.innerHTML = `
+    <div style="background:var(--ink);border-left:1px solid var(--line);height:100%;width:min(340px,100vw);padding:1.5rem 1rem;overflow-y:auto;animation:slideRight .25s ease">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+        <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment)">Notificaciones</div>
+        <button onclick="document.getElementById('notifOverlay').remove()" style="background:transparent;border:none;font-size:1.2rem;cursor:pointer;color:var(--parch3)">✕</button>
+      </div>
+      ${!notifs.length
+        ? `<div style="text-align:center;padding:2rem;color:var(--parch3);font-size:.8rem">Sin notificaciones nuevas 🎉</div>`
+        : notifs.map(n => `
+          <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:.85rem 1rem;margin-bottom:.5rem;cursor:pointer" onclick="markNotifRead(${n.id},this)">
+            <div style="display:flex;gap:.5rem;align-items:flex-start">
+              <span style="font-size:1rem">${typeIcon(n.type)}</span>
+              <div style="flex:1">
+                <div style="font-size:.82rem;color:var(--parchment);line-height:1.4">${n.message}</div>
+                <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);margin-top:.3rem">${new Date(n.created_at).toLocaleDateString('es-ES',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+              </div>
+            </div>
+          </div>`).join('')
+      }
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+}
+
+async function markNotifRead(id, el) {
+  await supaMarkNotifRead(id);
+  el.style.opacity = '.4';
+  el.style.pointerEvents = 'none';
+  const badge = document.getElementById('notifBadge');
+  if(badge) {
+    const cur = parseInt(badge.textContent) || 1;
+    const next = cur - 1;
+    badge.textContent = next > 9 ? '9+' : next;
+    badge.style.display = next > 0 ? 'flex' : 'none';
+  }
+}
+
+// ═══ SUPABASE — PLATOS PERSONALIZADOS ═══
+async function supaFetchCustomDishes() {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/custom_dishes?select=*&order=created_at.asc`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+    );
+    if(!res.ok) return null;
+    const rows = await res.json();
+    if(!Array.isArray(rows)) return null;
+    return rows.map(r => ({
+      id: r.dish_id,
+      name: r.name,
+      cat: r.cat,
+      allergens: (() => { try { return JSON.parse(r.allergens||'[]'); } catch(e){ return []; } })(),
+      cutlery: r.cutlery || '',
+      ingredients: r.ingredients || '',
+      history: r.history || '',
+      notes: r.notes || null
+    }));
+  } catch(e) { return null; }
+}
+
+async function supaUpsertCustomDish(dish) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/custom_dishes`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        dish_id: dish.id,
+        name: dish.name,
+        cat: dish.cat,
+        allergens: JSON.stringify(dish.allergens||[]),
+        cutlery: dish.cutlery||'',
+        ingredients: dish.ingredients||'',
+        history: dish.history||'',
+        notes: dish.notes||null,
+        updated_at: new Date().toISOString()
+      })
+    });
+  } catch(e) {}
+}
+
+async function supaDeleteCustomDish(dishId) {
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/custom_dishes?dish_id=eq.${dishId}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+    });
+  } catch(e) {}
+}
+
+async function syncCustomDishesFromCloud() {
+  const remote = await supaFetchCustomDishes();
+  if(!remote || !remote.length) return;
+  remote.forEach(d => {
+    if(!DISHES.find(x => x.id === d.id)) {
+      DISHES.push(d);
+      // Also persist locally
+      try {
+        const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+        if(!newIds.find(x => x.id === d.id)) {
+          newIds.push(d);
+          localStorage.setItem('txoko_new_dishes', JSON.stringify(newIds));
+        }
+      } catch(e) {}
+    }
+  });
+}
+
 let DB={employees:{}};
 function loadDB(){try{const s=localStorage.getItem(STORAGE_KEY);if(s)DB=JSON.parse(s);}catch(e){}}
 function saveDB(){
@@ -2857,6 +3677,7 @@ function renderXPBar(){
         <div class="xp-bar-fill" style="width:${pct}%"></div>
       </div>
       <div class="xp-bar-sub">${xp.toLocaleString()} XP${next?` · Faltan ${needed.toLocaleString()} para Nv.${next.level}`:' · ¡Nivel máximo!'}${(getEmp(currentUser).streak||0)>1?' · 🔥'+((getEmp(currentUser).streak||0))+' días':''}</div>
+      ${renderCertBadges(getEmp(currentUser))}
     </div>`;
 }
 
@@ -2871,6 +3692,7 @@ let repasoView='cats',repasoCat=null,repasoTopic='allergens';
 // ═══════ LOGIN ═══════
 loadDB();
 loadCartaOverrides();
+syncCustomDishesFromCloud();
 
 
 // ═══ DAILY STREAK ═══
@@ -3257,9 +4079,11 @@ function closePinAndEnter(){
   supaRestoreEmployee(currentUser).then(() => {
     showTab('dashboard');
     checkStreak();
-    // Only sync back if we have real data (avoid overwriting cloud with empty local)
     const emp = getEmp(currentUser);
     if(emp.xp && emp.xp > 0) supaUpsertEmployee(currentUser);
+    // Notifications
+    requestNotifPermission();
+    checkAndShowNotifications(currentUser);
   });
 }
 
@@ -3273,6 +4097,59 @@ function logout(){
   document.getElementById('screenLogin').classList.add('active');
   document.getElementById('screenApp').classList.remove('active');
   
+
+// ═══ CERTIFICACIONES POR CATEGORÍA ═══
+const CERT_THRESHOLD = 0.80; // 80% of dishes in category known = certified
+
+function getCertifications(emp){
+  const known = emp.knownDishes || {};
+  return CATS_ES.filter(cat => {
+    const dishes = DISHES.filter(d => d.cat === cat);
+    if(!dishes.length) return false;
+    const knownCount = dishes.filter(d => known[d.id]).length;
+    return knownCount / dishes.length >= CERT_THRESHOLD;
+  });
+}
+
+function checkNewCertifications(emp, oldKnown){
+  const oldCerts = getCertifications({knownDishes: oldKnown});
+  const newCerts = getCertifications(emp);
+  const fresh = newCerts.filter(c => !oldCerts.includes(c));
+  fresh.forEach(cat => showCertModal(cat));
+}
+
+function showCertModal(cat){
+  const icon = CAT_ICONS[cat] || '🏅';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease';
+  modal.innerHTML = `
+    <div style="background:var(--ink);border:2px solid var(--gold-a);border-radius:var(--r);padding:2.5rem 2rem;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);animation:scaleIn .4s cubic-bezier(.34,1.56,.64,1)">
+      <div style="font-size:3.5rem;margin-bottom:.5rem">${icon}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:.2em;margin-bottom:.5rem;opacity:.8">✦ ${LANG==='en'?'Certificate earned':'Certificado obtenido'} ✦</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.3rem;line-height:1.2">${LANG==='en'?'Expert in':'Experto en'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold);margin-bottom:.6rem;font-style:italic">${catLocal(cat)}</div>
+      <div style="font-size:.78rem;color:var(--parch2);margin-bottom:1.75rem;line-height:1.6">${LANG==='en'?'You\'ve mastered 80% or more of this category!':'¡Has dominado el 80% o más de esta categoría!'}</div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);border:none;border-radius:30px;padding:.7rem 2rem;font-family:'Jost',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;letter-spacing:.05em">
+        ${LANG==='en'?'Excellent! 🎖️':'¡Excelente! 🎖️'}
+      </button>
+    </div>`;
+  playSound('levelup');
+  document.body.appendChild(modal);
+  // Award XP for certification
+  setTimeout(()=> awardXP(50, LANG==='en'?`${catLocal(cat)} certified 🎖️`:`Certificado ${catLocal(cat)} 🎖️`), 500);
+}
+
+function renderCertBadges(emp){
+  const certs = getCertifications(emp);
+  if(!certs.length) return '';
+  return `<div style="margin-top:.75rem">
+    <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem;opacity:.8">${LANG==='en'?'Certifications':'Certificados'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+      ${certs.map(cat=>`<span title="${catLocal(cat)}" style="display:inline-flex;align-items:center;gap:.3rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:20px;padding:.25rem .65rem;font-size:.7rem;color:var(--gold);font-family:'Jost',sans-serif;font-weight:500">${CAT_ICONS[cat]||'🏅'} ${catLocal(cat)}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
 // ═══ RANKING (visible to all) ═══
 function renderRanking(){
   const c = document.getElementById('appContent');
@@ -3396,6 +4273,9 @@ function renderSupDashboard(){
     if(remoteEmps && remoteEmps.length) remoteEmps.forEach(e => { allEmps[e.name] = e; });
     Object.keys(DB.employees).forEach(name => { if(name) allEmps[name] = DB.employees[name]; });
     const empNames = Object.keys(allEmps).filter(n => n !== '');
+    // Expose globally so supervisor action buttons can access them
+    window._supAllEmps = allEmps;
+    window._supEmpNames = empNames;
     if(empNames.length === 0){
       document.getElementById('appContent').innerHTML=`<div class="sup-wrap"><div style="text-align:center;padding:2rem;color:var(--parch3)">${LANG==='en'?'No employees yet.':'Sin empleados todavía.'}</div></div>`;
       return;
@@ -3434,6 +4314,7 @@ function renderSupDashboard(){
           <div style="flex:1">
             <div class="sup-emp-name">${name}${isCloud?` <span style="font-size:.55rem;color:var(--gold);font-family:'DM Mono',monospace;opacity:.7">☁️</span>`:''}</div>
             <div style="font-size:.65rem;color:var(--parch3)">${lvl.icon} ${lvl.title} · Nv.${lvl.level}</div>
+            ${getCertifications(emp).map(c=>`<span title="${catLocal(c)}" style="font-size:.65rem">${CAT_ICONS[c]||'🏅'}</span>`).join('')}
           </div>
           <span class="sup-emp-level">${activityLabel}</span>
         </div>
@@ -3481,16 +4362,471 @@ function renderSupDashboard(){
           <div class="stat-tile"><div class="stat-num">${totalEmp}</div><div class="stat-lbl">${LANG==='en'?'Staff':'Equipo'}</div></div>
           <div class="stat-tile"><div class="stat-num">${studiedToday}</div><div class="stat-lbl">${LANG==='en'?'Active today':'Hoy activos'}</div></div>
           <div class="stat-tile"><div class="stat-num">${avgXP.toLocaleString()}</div><div class="stat-lbl">${LANG==='en'?'Avg XP':'XP medio'}</div></div>
+          <div class="stat-tile" style="${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length>0?'border-color:rgba(168,64,64,.3)':''}">
+            <div class="stat-num" style="color:${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length>0?'var(--rose)':'var(--sage)'}">
+              ${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length}
+            </div>
+            <div class="stat-lbl">${LANG==='en'?'Inactive':'Inactivos'}</div>
+          </div>
         </div>
         ${renderWeeklyChallenge()}
+        ${(()=>{
+          // Inactivity alerts — employees with 3+ days without studying
+          const inactive = empNames.filter(n => {
+            const last = allEmps[n].lastStudyDay || '';
+            if(!last) return true;
+            const diff = Math.floor((new Date(todayStr()) - new Date(last)) / 86400000);
+            return diff >= 3;
+          });
+          if(!inactive.length) return '';
+          return `<div style="background:rgba(168,64,64,.08);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.9rem 1rem;margin-bottom:1rem">
+            <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--rose);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">⚠️ ${LANG==='en'?'Inactive 3+ days':'Sin actividad 3+ días'}</div>
+            ${inactive.map(n => {
+              const last = allEmps[n].lastStudyDay || '';
+              const diff = last ? Math.floor((new Date(todayStr()) - new Date(last)) / 86400000) : null;
+              const label = diff===null?(LANG==='en'?'Never':'Nunca'):diff===1?(LANG==='en'?'Yesterday':'Ayer'):`${diff}d`;
+              const urgency = diff===null||diff>=7 ? 'var(--rose)' : 'var(--gold)';
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid rgba(168,64,64,.1)">
+                <span style="font-size:.82rem;color:var(--parchment)">${n}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:${urgency};font-weight:600">${label}</span>
+              </div>`;
+            }).join('')}
+          </div>`;
+        })()}
         <div class="section-eyebrow">${LANG==='en'?'Individual progress':'Progreso individual'}</div>
         ${cards}
-        <div style="display:flex;gap:.5rem;margin-top:.5rem">
-          <button class="btn-secondary" onclick="renderCartaEditor()" style="flex:1">✏️ ${LANG==='en'?'Edit menu':'Editar carta'}</button>
-          <button class="btn-secondary" onclick="supAuthenticated=false;showTab('dashboard')" style="flex:1">${LANG==='en'?'Exit panel':'Salir del panel'}</button>
+        <div style="border-top:1px solid var(--line);margin-top:1.25rem;padding-top:1.25rem">
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem">Herramientas de supervisor</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+            <button onclick="renderCartaEditor()" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">✏️</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Editar carta</span>
+            </button>
+            <button onclick="renderSupAnalytics(_supAllEmps,_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📊</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Analytics</span>
+            </button>
+            <button onclick="renderSupNotifSender(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📣</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Enviar aviso</span>
+            </button>
+            <button onclick="renderLiveQuizHost(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">🎯</span>
+              <span style="font-size:.72rem;font-weight:600;color:var(--gold)">Quiz en vivo</span>
+            </button>
+          </div>
+          <button onclick="supAuthenticated=false;showTab('dashboard')" style="width:100%;padding:.65rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.78rem;color:var(--parch3);cursor:pointer;letter-spacing:.04em">
+            ${LANG==='en'?'← Exit panel':'← Salir del panel'}
+          </button>
         </div>
       </div>`;
   });
+}
+
+// ═══ ANALYTICS ═══
+function renderSupAnalytics(allEmps, empNames){
+  const c = document.getElementById('appContent');
+
+  // Compute team-wide stats
+  const totalExams = empNames.reduce((a,n)=>(a+(allEmps[n].sessions||[]).length),0);
+  const avgAccByWeek = {}; // week → {correct,total}
+
+  empNames.forEach(n => {
+    (allEmps[n].sessions||[]).forEach(s => {
+      if(!s.ts) return;
+      const d = new Date(s.ts);
+      const week = `${d.getFullYear()}-W${String(Math.ceil((d.getDate()+new Date(d.getFullYear(),d.getMonth(),1).getDay())/7)).padStart(2,'0')}`;
+      if(!avgAccByWeek[week]) avgAccByWeek[week] = {correct:0,total:0};
+      avgAccByWeek[week].correct += s.score||0;
+      avgAccByWeek[week].total += s.total||0;
+    });
+  });
+
+  const weeks = Object.keys(avgAccByWeek).sort().slice(-8);
+  const maxBar = 120;
+  const weekBars = weeks.map(w => {
+    const {correct,total} = avgAccByWeek[w];
+    const pct = total ? Math.round(correct/total*100) : 0;
+    const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+    const label = w.split('-W')[1] ? `S${w.split('-W')[1]}` : w;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1">
+      <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch3)">${pct}%</div>
+      <div style="width:100%;background:var(--ink3);border-radius:4px 4px 0 0;height:${maxBar}px;display:flex;align-items:flex-end">
+        <div style="width:100%;background:${col};border-radius:4px 4px 0 0;height:${Math.round(pct/100*maxBar)}px;transition:height .5s ease"></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--parch4)">${label}</div>
+    </div>`;
+  }).join('');
+
+  // Dish mastery — which dishes nobody knows
+  const dishKnown = {};
+  DISHES.forEach(d => { dishKnown[d.id] = 0; });
+  empNames.forEach(n => {
+    Object.entries(allEmps[n].knownDishes||{}).forEach(([id,v]) => { if(v) dishKnown[id] = (dishKnown[id]||0)+1; });
+  });
+  const total = empNames.length || 1;
+  const hardest = DISHES.map(d => ({name:d.name, cat:d.cat, pct:Math.round((dishKnown[d.id]||0)/total*100)}))
+    .sort((a,b)=>a.pct-b.pct).slice(0,8);
+  const hardestRows = hardest.map(d => {
+    const col = d.pct>=80?'var(--sage)':d.pct>=50?'var(--gold)':'var(--rose)';
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.78rem;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${d.cat}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem">
+        <div style="width:60px;background:var(--ink3);border-radius:4px;height:6px">
+          <div style="width:${d.pct}%;background:${col};border-radius:4px;height:6px"></div>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:${col};width:28px;text-align:right">${d.pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Top improver — most XP gained this week (approximate from streak)
+  const sorted = empNames.slice().sort((a,b)=>(allEmps[b].xp||0)-(allEmps[a].xp||0));
+  const leaderRows = sorted.slice(0,5).map((n,i)=>{
+    const emp = allEmps[n];
+    const lvl = getLevelInfo(emp.xp||0);
+    const certs = getCertifications(emp);
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem 0;border-bottom:1px solid var(--line)">
+      <span style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--parch4);width:16px">${i+1}</span>
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--ink3);border:1px solid var(--gold-a);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.85rem;color:var(--gold)">${n[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-size:.8rem;color:var(--parchment)">${n} ${certs.map(c=>CAT_ICONS[c]||'🏅').join('')}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${lvl.icon} Nv.${lvl.level} · ${(emp.sessions||[]).length} exámenes</div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--gold)">${(emp.xp||0).toLocaleString()} XP</span>
+    </div>`;
+  }).join('');
+
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">📊 Analytics del equipo</div>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:1rem">
+      <div class="stat-tile"><div class="stat-num">${empNames.length}</div><div class="stat-lbl">Empleados</div></div>
+      <div class="stat-tile"><div class="stat-num">${totalExams}</div><div class="stat-lbl">Exámenes totales</div></div>
+      <div class="stat-tile"><div class="stat-num">${Math.round(empNames.reduce((a,n)=>(a+(allEmps[n].xp||0)),0)/Math.max(1,empNames.length)).toLocaleString()}</div><div class="stat-lbl">XP medio</div></div>
+    </div>
+
+    ${weeks.length ? `
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem">Precisión del equipo por semana</div>
+      <div style="display:flex;gap:.3rem;align-items:flex-end;height:${maxBar+40}px">${weekBars}</div>
+    </div>` : ''}
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Platos menos dominados</div>
+      ${hardestRows}
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Ranking XP</div>
+      ${leaderRows}
+    </div>
+  </div>`;
+}
+
+// ═══ ENVIAR AVISO / NOTIFICACIÓN ═══
+function renderSupNotifSender(empNames){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">📣 Enviar aviso al equipo</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Destinatario</div>
+      <select id="notifTarget" style="width:100%;padding:.6rem .8rem;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);background:#fff">
+        <option value="all">📢 Todo el equipo</option>
+        ${empNames.filter(n=>n!=='Duvan').map(n=>`<option value="${n}">${n}</option>`).join('')}
+      </select>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Tipo</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        ${[['info','📣','Aviso'],['warning','⚠️','Atención'],['success','✅','Felicitación'],['urgent','🚨','Urgente']].map(([v,icon,lbl])=>`
+          <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;padding:.4rem .7rem;border:1px solid var(--line);border-radius:20px;font-size:.78rem">
+            <input type="radio" name="notifType" value="${v}" ${v==='info'?'checked':''}> ${icon} ${lbl}
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Mensaje</div>
+      <textarea id="notifMsg" rows="4" placeholder="Escribe el aviso para tu equipo..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div id="notifQuickBtns" style="margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">Mensajes rápidos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+        ${[
+          'Recordad repasar los alérgenos antes del servicio 🍽️',
+          'Buen trabajo esta semana, seguid así 💪',
+          'Mañana hay cambio en la carta, actualizad la app 📋',
+          'Recordad el briefing de hoy a las 19:00 ⏰'
+        ].map(msg=>`<button onclick="document.getElementById('notifMsg').value=\`${msg}\`" style="background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:.3rem .7rem;font-family:'Jost',sans-serif;font-size:.72rem;color:var(--parch2);cursor:pointer">${msg.slice(0,35)}…</button>`).join('')}
+      </div>
+    </div>
+    <button onclick="sendNotification()" class="btn-primary" style="width:100%;padding:.85rem">📣 Enviar aviso</button>
+    <div id="notifSendMsg" style="text-align:center;margin-top:.5rem;font-size:.75rem;color:var(--sage);font-family:'DM Mono',monospace;display:none">✓ Aviso enviado</div>
+  </div>`;
+}
+
+async function sendNotification(){
+  const target = document.getElementById('notifTarget')?.value || 'all';
+  const msg = document.getElementById('notifMsg')?.value.trim();
+  const type = document.querySelector('input[name="notifType"]:checked')?.value || 'info';
+  if(!msg) return;
+  await supaCreateNotification(target, msg, type);
+  const el = document.getElementById('notifSendMsg');
+  if(el){ el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
+  document.getElementById('notifMsg').value = '';
+}
+
+// ═══ QUIZ EN VIVO ═══
+async function supaCreateLiveSession(questions){
+  try {
+    const code = Math.floor(1000+Math.random()*9000).toString();
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json', 'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ code, questions: JSON.stringify(questions), current_q: 0, state: 'waiting', answers: '{}', created_at: new Date().toISOString() })
+    });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows[0] || null;
+  } catch(e){ return null; }
+}
+
+async function supaGetLiveSession(code){
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions?code=eq.${code}&select=*`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows[0] || null;
+  } catch(e){ return null; }
+}
+
+async function supaUpdateLiveSession(code, patch){
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/live_sessions?code=eq.${code}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch)
+    });
+  } catch(e){}
+}
+
+async function supaSubmitLiveAnswer(code, name, qIdx, answer){
+  try {
+    const sess = await supaGetLiveSession(code);
+    if(!sess) return;
+    const answers = JSON.parse(sess.answers||'{}');
+    if(!answers[qIdx]) answers[qIdx] = {};
+    answers[qIdx][name] = answer;
+    await supaUpdateLiveSession(code, { answers: JSON.stringify(answers) });
+  } catch(e){}
+}
+
+let liveQuizInterval = null;
+
+function renderLiveQuizHost(empNames){
+  // Build 5 random questions
+  const pool = DISHES.sort(()=>Math.random()-.5).slice(0,5);
+  const questions = pool.map(d => {
+    const topic = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+    const correct = (topic.a(d)||'').trim();
+    const wrongs = DISHES.filter(x=>x.id!==d.id).sort(()=>Math.random()-.5).slice(0,3).map(x=>(topic.a(x)||'').trim()).filter(w=>w&&w!==correct);
+    const choices = [correct,...wrongs.slice(0,3)].sort(()=>Math.random()-.5);
+    return { dish: d.name, topic: topic.label, correct, choices, correctIdx: choices.indexOf(correct) };
+  });
+
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="stopLiveQuiz();renderSupDashboard();" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">🎯 Quiz en vivo</div>
+    </div>
+    <div id="liveQuizHostContent">
+      <div style="text-align:center;padding:2rem;color:var(--parch3);font-family:'DM Mono',monospace;font-size:.72rem">⏳ Creando sesión...</div>
+    </div>
+  </div>`;
+
+  supaCreateLiveSession(questions).then(sess => {
+    if(!sess){ document.getElementById('liveQuizHostContent').innerHTML='<div style="color:var(--rose);text-align:center;padding:1rem">Error al crear sesión. Verifica la tabla live_sessions en Supabase.</div>'; return; }
+    const code = sess.code;
+    document.getElementById('liveQuizHostContent').innerHTML = `
+      <div style="text-align:center;background:var(--gold-b);border:2px solid var(--gold-a);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem">Código de sesión</div>
+        <div style="font-family:'Playfair Display',serif;font-size:3rem;color:var(--gold);letter-spacing:.15em;font-weight:700">${code}</div>
+        <div style="font-size:.75rem;color:var(--parch3);margin-top:.4rem">Los empleados introducen este código en la app</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:1rem;margin-bottom:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.5rem">Participantes conectados</div>
+        <div id="liveParticipants" style="font-size:.82rem;color:var(--parch3);font-style:italic">Esperando...</div>
+      </div>
+      <div id="liveQuizProgress" style="margin-bottom:1rem"></div>
+      <div style="display:flex;gap:.5rem">
+        <button onclick="advanceLiveQuiz('${code}',${JSON.stringify(questions).replace(/'/g,"\'")})" id="liveNextBtn" class="btn-primary" style="flex:1">▶ Iniciar quiz</button>
+        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" class="btn-secondary">✕ Terminar</button>
+      </div>`;
+
+    // Poll for participants
+    liveQuizInterval = setInterval(async () => {
+      const s = await supaGetLiveSession(code);
+      if(!s) return;
+      const answers = JSON.parse(s.answers||'{}');
+      const participants = [...new Set(Object.values(answers).flatMap(q=>Object.keys(q)))];
+      const pEl = document.getElementById('liveParticipants');
+      if(pEl) pEl.innerHTML = participants.length
+        ? participants.map(p=>`<span style="display:inline-block;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:20px;padding:.2rem .6rem;font-size:.75rem;color:var(--gold);margin:.15rem">${p} ✓</span>`).join('')
+        : '<span style="color:var(--parch3);font-style:italic">Esperando participantes...</span>';
+
+      // Show current question results
+      const qIdx = s.current_q;
+      if(qIdx > 0 && answers[qIdx-1]) {
+        const q = questions[qIdx-1];
+        const qAnswers = answers[qIdx-1];
+        const correctCount = Object.values(qAnswers).filter(a=>a===q.correct).length;
+        const total = Object.values(qAnswers).length;
+        const pEl2 = document.getElementById('liveQuizProgress');
+        if(pEl2 && q) pEl2.innerHTML = `<div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:.85rem 1rem">
+          <div style="font-size:.78rem;color:var(--parch3);margin-bottom:.35rem">Pregunta ${qIdx}: ${q.dish} — ${q.topic}</div>
+          <div style="font-size:.85rem;color:var(--parchment);margin-bottom:.5rem">Respuesta correcta: <strong>${q.correct}</strong></div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:${correctCount/Math.max(1,total)>=.7?'var(--sage)':'var(--rose)'}">✓ ${correctCount}/${total} correctos</div>
+        </div>`;
+      }
+    }, 2500);
+  });
+}
+
+let liveCurrentQ = 0;
+async function advanceLiveQuiz(code, questions){
+  if(liveCurrentQ >= questions.length){
+    await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
+    stopLiveQuiz();
+    alert('¡Quiz terminado! Revisa los resultados en la pantalla.');
+    return;
+  }
+  await supaUpdateLiveSession(code, { state: 'active', current_q: liveCurrentQ });
+  liveCurrentQ++;
+  const btn = document.getElementById('liveNextBtn');
+  if(btn) btn.textContent = liveCurrentQ >= questions.length ? '🏁 Finalizar quiz' : `▶ Pregunta ${liveCurrentQ+1} de ${questions.length}`;
+}
+
+function stopLiveQuiz(){
+  if(liveQuizInterval){ clearInterval(liveQuizInterval); liveQuizInterval=null; }
+  liveCurrentQ = 0;
+}
+
+// ═══ PARTICIPAR EN QUIZ EN VIVO (vista empleado) ═══
+function renderJoinLiveQuiz(){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:1.5rem 1rem">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="showTab('dashboard')" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">🎯 Unirse al quiz</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">Código de sesión</div>
+      <input id="liveCode" maxlength="4" placeholder="1234" inputmode="numeric" style="width:100%;text-align:center;font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--gold);border:2px solid var(--gold-a);border-radius:var(--r2);padding:.6rem;letter-spacing:.3em;background:var(--gold-b)">
+    </div>
+    <button onclick="joinLiveQuiz()" class="btn-primary" style="width:100%;padding:.85rem">Unirse →</button>
+    <div id="liveJoinError" style="text-align:center;color:var(--rose);font-size:.75rem;margin-top:.5rem;display:none">Código no encontrado o sesión terminada</div>
+  </div>`;
+}
+
+let livePlayerInterval = null;
+let livePlayerLastQ = -1;
+
+async function joinLiveQuiz(){
+  const code = document.getElementById('liveCode')?.value.trim();
+  if(!code || code.length < 4) return;
+  const sess = await supaGetLiveSession(code);
+  if(!sess || sess.state === 'ended'){
+    const el = document.getElementById('liveJoinError');
+    if(el) el.style.display='block';
+    return;
+  }
+  livePlayerLastQ = -1;
+  renderLiveQuizWaiting(code, JSON.parse(sess.questions||'[]'));
+}
+
+function renderLiveQuizWaiting(code, questions){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:2rem 1rem;text-align:center">
+    <div style="font-size:3rem;margin-bottom:1rem">⏳</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--parchment);margin-bottom:.5rem">Conectado</div>
+    <div style="font-size:.8rem;color:var(--parch3);margin-bottom:.5rem">Esperando al supervisor...</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);letter-spacing:.15em">Código: ${code}</div>
+    <div id="livePlayerContent" style="margin-top:1.5rem"></div>
+  </div>`;
+
+  if(livePlayerInterval) clearInterval(livePlayerInterval);
+  livePlayerInterval = setInterval(async () => {
+    const sess = await supaGetLiveSession(code);
+    if(!sess) return;
+    if(sess.state === 'ended'){ clearInterval(livePlayerInterval); renderLiveQuizPlayerEnd(code, questions, JSON.parse(sess.answers||'{}')); return; }
+    if(sess.state === 'active' && sess.current_q !== livePlayerLastQ){
+      livePlayerLastQ = sess.current_q;
+      const qIdx = sess.current_q - 1;
+      if(qIdx >= 0 && qIdx < questions.length) renderLiveQuizQuestion(code, questions, qIdx, JSON.parse(sess.answers||'{}'));
+    }
+  }, 2000);
+}
+
+function renderLiveQuizQuestion(code, questions, qIdx, existingAnswers){
+  const q = questions[qIdx];
+  const myAnswer = existingAnswers[qIdx]?.[currentUser];
+  const pEl = document.getElementById('livePlayerContent') || document.getElementById('appContent');
+  pEl.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;text-align:left">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);margin-bottom:.3rem">Pregunta ${qIdx+1} de ${questions.length} · ${q.topic}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment);margin-bottom:1rem">${q.dish}</div>
+      ${q.choices.map((ch,i)=>`
+        <button onclick="submitLiveAnswer('${code}',${JSON.stringify(questions)},${qIdx},'${ch.replace(/'/g,"\'")}')"
+          style="width:100%;text-align:left;padding:.75rem 1rem;margin-bottom:.4rem;border:2px solid ${myAnswer===ch?(ch===q.correct?'var(--sage)':'var(--rose)'):'var(--line)'};border-radius:var(--r2);background:${myAnswer===ch?(ch===q.correct?'rgba(61,122,84,.1)':'rgba(168,64,64,.08)'):'#fff'};font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);cursor:pointer;transition:all .2s"
+          ${myAnswer?'disabled':''}>
+          ${String.fromCharCode(65+i)}. ${ch}
+        </button>`).join('')}
+      ${myAnswer?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3);margin-top:.5rem">Respuesta enviada · Espera la siguiente pregunta</div>`:''}
+    </div>`;
+}
+
+async function submitLiveAnswer(code, questions, qIdx, answer){
+  await supaSubmitLiveAnswer(code, currentUser, qIdx, answer);
+  const sess = await supaGetLiveSession(code);
+  if(sess) renderLiveQuizQuestion(code, questions, qIdx, JSON.parse(sess.answers||'{}'));
+}
+
+function renderLiveQuizPlayerEnd(code, questions, answers){
+  if(livePlayerInterval){ clearInterval(livePlayerInterval); livePlayerInterval=null; }
+  let correct = 0;
+  questions.forEach((q,i)=>{ if(answers[i]?.[currentUser]===q.correct) correct++; });
+  const pct = Math.round(correct/questions.length*100);
+  const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+  awardXP(correct*5, '🎯 Quiz en vivo');
+  document.getElementById('appContent').innerHTML = `<div style="max-width:420px;margin:0 auto;padding:2rem 1rem;text-align:center">
+    <div style="font-size:3rem;margin-bottom:.75rem">${pct>=80?'🏆':pct>=50?'👍':'💪'}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.25rem">Quiz terminado</div>
+    <div style="font-size:2.5rem;font-family:'Playfair Display',serif;color:${col};margin:.5rem 0">${pct}%</div>
+    <div style="font-size:.82rem;color:var(--parch3);margin-bottom:1.5rem">${correct} de ${questions.length} correctas · +${correct*5} XP</div>
+    ${questions.map((q,i)=>{
+      const mine = answers[i]?.[currentUser];
+      const ok = mine===q.correct;
+      return `<div style="background:#fff;border:1px solid ${ok?'rgba(61,122,84,.3)':'rgba(168,64,64,.2)'};border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:.4rem;text-align:left">
+        <div style="font-size:.8rem;color:var(--parchment)">${ok?'✅':'❌'} ${q.dish}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--parch4);margin-top:.2rem">${mine||'Sin respuesta'} ${!ok?'→ '+q.correct:''}</div>
+      </div>`;
+    }).join('')}
+    <button onclick="showTab('dashboard')" class="btn-primary" style="width:100%;margin-top:1rem">Volver al inicio</button>
+  </div>`;
 }
 
 // ═══ CARTA EDITOR ═══
@@ -3510,7 +4846,8 @@ function renderCartaEditor(){
       </select>
     </div>
     <div id="cartaDishList"></div>
-    <button class="btn-secondary" onclick="renderSupDashboard()" style="width:100%;margin-top:.75rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
+    <button onclick="renderCartaNewDish()" style="width:100%;padding:.8rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.85rem;font-weight:600;color:var(--gold);cursor:pointer;margin-bottom:.5rem">+ ${LANG==='en'?'Add new dish':'Añadir nuevo plato'}</button>
+    <button class="btn-secondary" onclick="renderSupDashboard()" style="width:100%;margin-top:.25rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
   </div>`;
   renderCartaList();
 }
@@ -3580,15 +4917,119 @@ function saveCartaDish(id){
     overrides[id] = {allergens:d.allergens,cutlery:d.cutlery,ingredients:d.ingredients,history:d.history,notes:d.notes};
     localStorage.setItem('txoko_carta_overrides', JSON.stringify(overrides));
   } catch(e){}
+  // If it's a custom dish (added by supervisor), sync to Supabase
+  try {
+    const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    if(newIds.find(x=>x.id===id)) supaUpsertCustomDish(d);
+  } catch(e){}
   const msg = document.getElementById('cartaSaveMsg');
   if(msg){ msg.style.display='block'; setTimeout(()=>msg.style.display='none',2000); }
+}
+
+// ═══ NUEVO PLATO ═══
+function renderCartaNewDish(){
+  const cats = [...new Set(DISHES.map(d=>d.cat))];
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="renderCartaEditor()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">${LANG==='en'?'New dish':'Nuevo plato'}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Nombre *</div>
+      <input id="newDishName" type="text" placeholder="Ej: Tartar de atún" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);box-sizing:border-box">
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Categoría *</div>
+      <select id="newDishCat" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);background:#fff">
+        ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        <option value="__nueva__">+ ${LANG==='en'?'New category':'Nueva categoría'}...</option>
+      </select>
+      <input id="newDishCatCustom" type="text" placeholder="${LANG==='en'?'Category name':'Nombre de categoría'}" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);box-sizing:border-box;margin-top:.5rem;display:none">
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Alérgenos</div>
+      <textarea id="newDishAllergens" rows="2" placeholder="Ej: Gluten, Lácteos, Huevo" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Marcaje</div>
+      <textarea id="newDishCutlery" rows="2" placeholder="Ej: Cuchara sopera, tenedor de pescado" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Ingredientes</div>
+      <textarea id="newDishIngredients" rows="4" placeholder="Ingredientes principales..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Historia / Storytelling</div>
+      <textarea id="newDishHistory" rows="4" placeholder="Historia o descripción del plato..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div id="newDishError" style="color:var(--rose);font-size:.75rem;font-family:'DM Mono',monospace;margin-bottom:.5rem;display:none"></div>
+    <button onclick="saveNewDish()" class="btn-primary" style="width:100%;padding:.85rem">💾 ${LANG==='en'?'Add dish':'Añadir plato'}</button>
+  </div>`;
+
+  // Show/hide custom category input
+  setTimeout(()=>{
+    const sel = document.getElementById('newDishCat');
+    const inp = document.getElementById('newDishCatCustom');
+    if(sel&&inp) sel.addEventListener('change', ()=>{
+      inp.style.display = sel.value==='__nueva__' ? 'block' : 'none';
+    });
+  }, 100);
+}
+
+function saveNewDish(){
+  const name = document.getElementById('newDishName')?.value.trim();
+  const catSel = document.getElementById('newDishCat')?.value;
+  const catCustom = document.getElementById('newDishCatCustom')?.value.trim();
+  const cat = catSel==='__nueva__' ? catCustom : catSel;
+  const errEl = document.getElementById('newDishError');
+
+  if(!name){ if(errEl){errEl.textContent='⚠️ El nombre es obligatorio';errEl.style.display='block';} return; }
+  if(!cat){ if(errEl){errEl.textContent='⚠️ Selecciona o escribe una categoría';errEl.style.display='block';} return; }
+  if(errEl) errEl.style.display='none';
+
+  const allergens = (document.getElementById('newDishAllergens')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const cutlery = (document.getElementById('newDishCutlery')?.value||'').trim();
+  const ingredients = (document.getElementById('newDishIngredients')?.value||'').trim();
+  const history = (document.getElementById('newDishHistory')?.value||'').trim();
+
+  // Generate new unique ID
+  const newId = Math.max(0, ...DISHES.map(d=>d.id)) + 1;
+
+  const newDish = { id: newId, name, cat, allergens, cutlery, ingredients, history, notes: null };
+  DISHES.push(newDish);
+
+  // Persist locally
+  try {
+    const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    newIds.push(newDish);
+    localStorage.setItem('txoko_new_dishes', JSON.stringify(newIds));
+  } catch(e){}
+  // Sync to Supabase
+  supaUpsertCustomDish(newDish);
+
+  // Confirm toast
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;padding:.55rem 1.3rem;border-radius:30px;font-family:Jost,sans-serif;font-size:.82rem;font-weight:600;z-index:9999;white-space:nowrap';
+  toast.textContent = '✓ ' + (LANG==='en'?`"${name}" added`:`"${name}" añadido`);
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2500);
+
+  renderCartaEditor();
 }
 
 // Load carta overrides on startup
 function loadCartaOverrides(){
   try {
+    // Load new dishes added by supervisor
+    const newDishes = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    newDishes.forEach(d => {
+      if(d && d.id && !DISHES.find(x=>x.id===d.id)) DISHES.push(d);
+    });
+    // Load edits to existing dishes
     const overrides = JSON.parse(localStorage.getItem('txoko_carta_overrides')||'{}');
     Object.entries(overrides).forEach(([id,data])=>{
+      if(id.startsWith('new_')) return; // already loaded above
       const d = DISHES.find(x=>x.id===parseInt(id));
       if(d){ Object.assign(d,data); }
     });
@@ -4027,6 +5468,11 @@ function renderDashboard(){
         <div class="mode-tile-title">${LANG==='en'?'Team ranking':'Ranking del equipo'}</div>
         <div class="mode-tile-desc">${LANG==='en'?'See how you compare to your team':'Compara tu progreso con el equipo'}</div>
       </div>
+      <div class="mode-tile" onclick="renderJoinLiveQuiz()" id="liveQuizTile" style="display:none">
+        <div class="mode-tile-icon">🎯</div>
+        <div class="mode-tile-title">Quiz en vivo</div>
+        <div class="mode-tile-desc">Únete a la sesión del supervisor</div>
+      </div>
     </div>
 
     <div class="section-eyebrow" style="animation:slideUp .4s .12s ease both">${t('performance')}</div>
@@ -4034,6 +5480,19 @@ function renderDashboard(){
       ${progressRows}
     </div>
   `;
+  // Check for active live quiz session
+  checkActiveLiveSession();
+}
+
+async function checkActiveLiveSession(){
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions?state=eq.active&order=created_at.desc&limit=1`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } });
+    if(!res.ok) return;
+    const rows = await res.json();
+    const tile = document.getElementById('liveQuizTile');
+    if(tile) tile.style.display = rows.length ? '' : 'none';
+  } catch(e){}
 }
 
 // ═══════ FLASHCARDS ═══════
@@ -4116,8 +5575,15 @@ function fcRate(score){
   emp.topicScores[fcTopic]=emp.topicScores[fcTopic]||{correct:0,total:0};
   emp.topicScores[fcTopic].total++;
   if(score>=1)emp.topicScores[fcTopic].correct++;
-  if(score===2){emp.knownDishes=emp.knownDishes||{};emp.knownDishes[d.id]=true;}
-  saveDB();
+  if(score===2){
+    const oldKnown = {...(emp.knownDishes||{})};
+    emp.knownDishes=emp.knownDishes||{};
+    emp.knownDishes[d.id]=true;
+    saveDB();
+    setTimeout(()=>checkNewCertifications(emp, oldKnown), 300);
+  } else {
+    saveDB();
+  }
   if(fcIndex<fcDishes.length-1){fcIndex++;renderFcCard();}
   else{
     document.getElementById('appContent').innerHTML=`
@@ -4474,6 +5940,7 @@ function renderStats(){
       <div class="xp-levels-grid" style="margin-top:1rem">${levelsHtml}</div>
     </div>
 
+    ${renderCertBadges(emp)}
     <div class="stats-row" style="animation:slideUp .35s ease both">
       <div class="stat-tile"><div class="stat-num">${overall}<sup>%</sup></div><div class="stat-lbl">${t('globalAccuracy')}</div></div>
       <div class="stat-tile"><div class="stat-num">${totalQ}</div><div class="stat-lbl">${t('questionsAnswered')}</div></div>
@@ -4495,6 +5962,59 @@ function renderStats(){
   `;
 }
 
+
+
+// ═══ CERTIFICACIONES POR CATEGORÍA ═══
+const CERT_THRESHOLD = 0.80; // 80% of dishes in category known = certified
+
+function getCertifications(emp){
+  const known = emp.knownDishes || {};
+  return CATS_ES.filter(cat => {
+    const dishes = DISHES.filter(d => d.cat === cat);
+    if(!dishes.length) return false;
+    const knownCount = dishes.filter(d => known[d.id]).length;
+    return knownCount / dishes.length >= CERT_THRESHOLD;
+  });
+}
+
+function checkNewCertifications(emp, oldKnown){
+  const oldCerts = getCertifications({knownDishes: oldKnown});
+  const newCerts = getCertifications(emp);
+  const fresh = newCerts.filter(c => !oldCerts.includes(c));
+  fresh.forEach(cat => showCertModal(cat));
+}
+
+function showCertModal(cat){
+  const icon = CAT_ICONS[cat] || '🏅';
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease';
+  modal.innerHTML = `
+    <div style="background:var(--ink);border:2px solid var(--gold-a);border-radius:var(--r);padding:2.5rem 2rem;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.6);animation:scaleIn .4s cubic-bezier(.34,1.56,.64,1)">
+      <div style="font-size:3.5rem;margin-bottom:.5rem">${icon}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:.2em;margin-bottom:.5rem;opacity:.8">✦ ${LANG==='en'?'Certificate earned':'Certificado obtenido'} ✦</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.3rem;line-height:1.2">${LANG==='en'?'Expert in':'Experto en'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold);margin-bottom:.6rem;font-style:italic">${catLocal(cat)}</div>
+      <div style="font-size:.78rem;color:var(--parch2);margin-bottom:1.75rem;line-height:1.6">${LANG==='en'?'You\'ve mastered 80% or more of this category!':'¡Has dominado el 80% o más de esta categoría!'}</div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);border:none;border-radius:30px;padding:.7rem 2rem;font-family:'Jost',sans-serif;font-weight:600;font-size:.88rem;cursor:pointer;letter-spacing:.05em">
+        ${LANG==='en'?'Excellent! 🎖️':'¡Excelente! 🎖️'}
+      </button>
+    </div>`;
+  playSound('levelup');
+  document.body.appendChild(modal);
+  // Award XP for certification
+  setTimeout(()=> awardXP(50, LANG==='en'?`${catLocal(cat)} certified 🎖️`:`Certificado ${catLocal(cat)} 🎖️`), 500);
+}
+
+function renderCertBadges(emp){
+  const certs = getCertifications(emp);
+  if(!certs.length) return '';
+  return `<div style="margin-top:.75rem">
+    <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem;opacity:.8">${LANG==='en'?'Certifications':'Certificados'}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.35rem">
+      ${certs.map(cat=>`<span title="${catLocal(cat)}" style="display:inline-flex;align-items:center;gap:.3rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:20px;padding:.25rem .65rem;font-size:.7rem;color:var(--gold);font-family:'Jost',sans-serif;font-weight:500">${CAT_ICONS[cat]||'🏅'} ${catLocal(cat)}</span>`).join('')}
+    </div>
+  </div>`;
+}
 
 // ═══ RANKING (visible to all) ═══
 function renderRanking(){
@@ -4619,6 +6139,9 @@ function renderSupDashboard(){
     if(remoteEmps && remoteEmps.length) remoteEmps.forEach(e => { allEmps[e.name] = e; });
     Object.keys(DB.employees).forEach(name => { if(name) allEmps[name] = DB.employees[name]; });
     const empNames = Object.keys(allEmps).filter(n => n !== '');
+    // Expose globally so supervisor action buttons can access them
+    window._supAllEmps = allEmps;
+    window._supEmpNames = empNames;
     if(empNames.length === 0){
       document.getElementById('appContent').innerHTML=`<div class="sup-wrap"><div style="text-align:center;padding:2rem;color:var(--parch3)">${LANG==='en'?'No employees yet.':'Sin empleados todavía.'}</div></div>`;
       return;
@@ -4657,6 +6180,7 @@ function renderSupDashboard(){
           <div style="flex:1">
             <div class="sup-emp-name">${name}${isCloud?` <span style="font-size:.55rem;color:var(--gold);font-family:'DM Mono',monospace;opacity:.7">☁️</span>`:''}</div>
             <div style="font-size:.65rem;color:var(--parch3)">${lvl.icon} ${lvl.title} · Nv.${lvl.level}</div>
+            ${getCertifications(emp).map(c=>`<span title="${catLocal(c)}" style="font-size:.65rem">${CAT_ICONS[c]||'🏅'}</span>`).join('')}
           </div>
           <span class="sup-emp-level">${activityLabel}</span>
         </div>
@@ -4704,16 +6228,471 @@ function renderSupDashboard(){
           <div class="stat-tile"><div class="stat-num">${totalEmp}</div><div class="stat-lbl">${LANG==='en'?'Staff':'Equipo'}</div></div>
           <div class="stat-tile"><div class="stat-num">${studiedToday}</div><div class="stat-lbl">${LANG==='en'?'Active today':'Hoy activos'}</div></div>
           <div class="stat-tile"><div class="stat-num">${avgXP.toLocaleString()}</div><div class="stat-lbl">${LANG==='en'?'Avg XP':'XP medio'}</div></div>
+          <div class="stat-tile" style="${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length>0?'border-color:rgba(168,64,64,.3)':''}">
+            <div class="stat-num" style="color:${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length>0?'var(--rose)':'var(--sage)'}">
+              ${empNames.filter(n=>{const l=allEmps[n].lastStudyDay||'';return !l||Math.floor((new Date(todayStr())-new Date(l))/86400000)>=3;}).length}
+            </div>
+            <div class="stat-lbl">${LANG==='en'?'Inactive':'Inactivos'}</div>
+          </div>
         </div>
         ${renderWeeklyChallenge()}
+        ${(()=>{
+          // Inactivity alerts — employees with 3+ days without studying
+          const inactive = empNames.filter(n => {
+            const last = allEmps[n].lastStudyDay || '';
+            if(!last) return true;
+            const diff = Math.floor((new Date(todayStr()) - new Date(last)) / 86400000);
+            return diff >= 3;
+          });
+          if(!inactive.length) return '';
+          return `<div style="background:rgba(168,64,64,.08);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.9rem 1rem;margin-bottom:1rem">
+            <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--rose);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">⚠️ ${LANG==='en'?'Inactive 3+ days':'Sin actividad 3+ días'}</div>
+            ${inactive.map(n => {
+              const last = allEmps[n].lastStudyDay || '';
+              const diff = last ? Math.floor((new Date(todayStr()) - new Date(last)) / 86400000) : null;
+              const label = diff===null?(LANG==='en'?'Never':'Nunca'):diff===1?(LANG==='en'?'Yesterday':'Ayer'):`${diff}d`;
+              const urgency = diff===null||diff>=7 ? 'var(--rose)' : 'var(--gold)';
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid rgba(168,64,64,.1)">
+                <span style="font-size:.82rem;color:var(--parchment)">${n}</span>
+                <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:${urgency};font-weight:600">${label}</span>
+              </div>`;
+            }).join('')}
+          </div>`;
+        })()}
         <div class="section-eyebrow">${LANG==='en'?'Individual progress':'Progreso individual'}</div>
         ${cards}
-        <div style="display:flex;gap:.5rem;margin-top:.5rem">
-          <button class="btn-secondary" onclick="renderCartaEditor()" style="flex:1">✏️ ${LANG==='en'?'Edit menu':'Editar carta'}</button>
-          <button class="btn-secondary" onclick="supAuthenticated=false;showTab('dashboard')" style="flex:1">${LANG==='en'?'Exit panel':'Salir del panel'}</button>
+        <div style="border-top:1px solid var(--line);margin-top:1.25rem;padding-top:1.25rem">
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem">Herramientas de supervisor</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+            <button onclick="renderCartaEditor()" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">✏️</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Editar carta</span>
+            </button>
+            <button onclick="renderSupAnalytics(_supAllEmps,_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📊</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Analytics</span>
+            </button>
+            <button onclick="renderSupNotifSender(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📣</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">Enviar aviso</span>
+            </button>
+            <button onclick="renderLiveQuizHost(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">🎯</span>
+              <span style="font-size:.72rem;font-weight:600;color:var(--gold)">Quiz en vivo</span>
+            </button>
+          </div>
+          <button onclick="supAuthenticated=false;showTab('dashboard')" style="width:100%;padding:.65rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.78rem;color:var(--parch3);cursor:pointer;letter-spacing:.04em">
+            ${LANG==='en'?'← Exit panel':'← Salir del panel'}
+          </button>
         </div>
       </div>`;
   });
+}
+
+// ═══ ANALYTICS ═══
+function renderSupAnalytics(allEmps, empNames){
+  const c = document.getElementById('appContent');
+
+  // Compute team-wide stats
+  const totalExams = empNames.reduce((a,n)=>(a+(allEmps[n].sessions||[]).length),0);
+  const avgAccByWeek = {}; // week → {correct,total}
+
+  empNames.forEach(n => {
+    (allEmps[n].sessions||[]).forEach(s => {
+      if(!s.ts) return;
+      const d = new Date(s.ts);
+      const week = `${d.getFullYear()}-W${String(Math.ceil((d.getDate()+new Date(d.getFullYear(),d.getMonth(),1).getDay())/7)).padStart(2,'0')}`;
+      if(!avgAccByWeek[week]) avgAccByWeek[week] = {correct:0,total:0};
+      avgAccByWeek[week].correct += s.score||0;
+      avgAccByWeek[week].total += s.total||0;
+    });
+  });
+
+  const weeks = Object.keys(avgAccByWeek).sort().slice(-8);
+  const maxBar = 120;
+  const weekBars = weeks.map(w => {
+    const {correct,total} = avgAccByWeek[w];
+    const pct = total ? Math.round(correct/total*100) : 0;
+    const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+    const label = w.split('-W')[1] ? `S${w.split('-W')[1]}` : w;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1">
+      <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch3)">${pct}%</div>
+      <div style="width:100%;background:var(--ink3);border-radius:4px 4px 0 0;height:${maxBar}px;display:flex;align-items:flex-end">
+        <div style="width:100%;background:${col};border-radius:4px 4px 0 0;height:${Math.round(pct/100*maxBar)}px;transition:height .5s ease"></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--parch4)">${label}</div>
+    </div>`;
+  }).join('');
+
+  // Dish mastery — which dishes nobody knows
+  const dishKnown = {};
+  DISHES.forEach(d => { dishKnown[d.id] = 0; });
+  empNames.forEach(n => {
+    Object.entries(allEmps[n].knownDishes||{}).forEach(([id,v]) => { if(v) dishKnown[id] = (dishKnown[id]||0)+1; });
+  });
+  const total = empNames.length || 1;
+  const hardest = DISHES.map(d => ({name:d.name, cat:d.cat, pct:Math.round((dishKnown[d.id]||0)/total*100)}))
+    .sort((a,b)=>a.pct-b.pct).slice(0,8);
+  const hardestRows = hardest.map(d => {
+    const col = d.pct>=80?'var(--sage)':d.pct>=50?'var(--gold)':'var(--rose)';
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.4rem 0;border-bottom:1px solid var(--line)">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.78rem;color:var(--parchment);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.name}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${d.cat}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.4rem">
+        <div style="width:60px;background:var(--ink3);border-radius:4px;height:6px">
+          <div style="width:${d.pct}%;background:${col};border-radius:4px;height:6px"></div>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:.62rem;color:${col};width:28px;text-align:right">${d.pct}%</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Top improver — most XP gained this week (approximate from streak)
+  const sorted = empNames.slice().sort((a,b)=>(allEmps[b].xp||0)-(allEmps[a].xp||0));
+  const leaderRows = sorted.slice(0,5).map((n,i)=>{
+    const emp = allEmps[n];
+    const lvl = getLevelInfo(emp.xp||0);
+    const certs = getCertifications(emp);
+    return `<div style="display:flex;align-items:center;gap:.6rem;padding:.45rem 0;border-bottom:1px solid var(--line)">
+      <span style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--parch4);width:16px">${i+1}</span>
+      <div style="width:28px;height:28px;border-radius:50%;background:var(--ink3);border:1px solid var(--gold-a);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.85rem;color:var(--gold)">${n[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-size:.8rem;color:var(--parchment)">${n} ${certs.map(c=>CAT_ICONS[c]||'🏅').join('')}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${lvl.icon} Nv.${lvl.level} · ${(emp.sessions||[]).length} exámenes</div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:.7rem;color:var(--gold)">${(emp.xp||0).toLocaleString()} XP</span>
+    </div>`;
+  }).join('');
+
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">📊 Analytics del equipo</div>
+    </div>
+
+    <div class="stats-row" style="margin-bottom:1rem">
+      <div class="stat-tile"><div class="stat-num">${empNames.length}</div><div class="stat-lbl">Empleados</div></div>
+      <div class="stat-tile"><div class="stat-num">${totalExams}</div><div class="stat-lbl">Exámenes totales</div></div>
+      <div class="stat-tile"><div class="stat-num">${Math.round(empNames.reduce((a,n)=>(a+(allEmps[n].xp||0)),0)/Math.max(1,empNames.length)).toLocaleString()}</div><div class="stat-lbl">XP medio</div></div>
+    </div>
+
+    ${weeks.length ? `
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.75rem">Precisión del equipo por semana</div>
+      <div style="display:flex;gap:.3rem;align-items:flex-end;height:${maxBar+40}px">${weekBars}</div>
+    </div>` : ''}
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Platos menos dominados</div>
+      ${hardestRows}
+    </div>
+
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Ranking XP</div>
+      ${leaderRows}
+    </div>
+  </div>`;
+}
+
+// ═══ ENVIAR AVISO / NOTIFICACIÓN ═══
+function renderSupNotifSender(empNames){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">📣 Enviar aviso al equipo</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Destinatario</div>
+      <select id="notifTarget" style="width:100%;padding:.6rem .8rem;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);background:#fff">
+        <option value="all">📢 Todo el equipo</option>
+        ${empNames.filter(n=>n!=='Duvan').map(n=>`<option value="${n}">${n}</option>`).join('')}
+      </select>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Tipo</div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+        ${[['info','📣','Aviso'],['warning','⚠️','Atención'],['success','✅','Felicitación'],['urgent','🚨','Urgente']].map(([v,icon,lbl])=>`
+          <label style="display:flex;align-items:center;gap:.3rem;cursor:pointer;padding:.4rem .7rem;border:1px solid var(--line);border-radius:20px;font-size:.78rem">
+            <input type="radio" name="notifType" value="${v}" ${v==='info'?'checked':''}> ${icon} ${lbl}
+          </label>`).join('')}
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Mensaje</div>
+      <textarea id="notifMsg" rows="4" placeholder="Escribe el aviso para tu equipo..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div id="notifQuickBtns" style="margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">Mensajes rápidos</div>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem">
+        ${[
+          'Recordad repasar los alérgenos antes del servicio 🍽️',
+          'Buen trabajo esta semana, seguid así 💪',
+          'Mañana hay cambio en la carta, actualizad la app 📋',
+          'Recordad el briefing de hoy a las 19:00 ⏰'
+        ].map(msg=>`<button onclick="document.getElementById('notifMsg').value=\`${msg}\`" style="background:var(--ink2);border:1px solid var(--line);border-radius:20px;padding:.3rem .7rem;font-family:'Jost',sans-serif;font-size:.72rem;color:var(--parch2);cursor:pointer">${msg.slice(0,35)}…</button>`).join('')}
+      </div>
+    </div>
+    <button onclick="sendNotification()" class="btn-primary" style="width:100%;padding:.85rem">📣 Enviar aviso</button>
+    <div id="notifSendMsg" style="text-align:center;margin-top:.5rem;font-size:.75rem;color:var(--sage);font-family:'DM Mono',monospace;display:none">✓ Aviso enviado</div>
+  </div>`;
+}
+
+async function sendNotification(){
+  const target = document.getElementById('notifTarget')?.value || 'all';
+  const msg = document.getElementById('notifMsg')?.value.trim();
+  const type = document.querySelector('input[name="notifType"]:checked')?.value || 'info';
+  if(!msg) return;
+  await supaCreateNotification(target, msg, type);
+  const el = document.getElementById('notifSendMsg');
+  if(el){ el.style.display='block'; setTimeout(()=>el.style.display='none',2500); }
+  document.getElementById('notifMsg').value = '';
+}
+
+// ═══ QUIZ EN VIVO ═══
+async function supaCreateLiveSession(questions){
+  try {
+    const code = Math.floor(1000+Math.random()*9000).toString();
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+        'Content-Type': 'application/json', 'Prefer': 'return=representation'
+      },
+      body: JSON.stringify({ code, questions: JSON.stringify(questions), current_q: 0, state: 'waiting', answers: '{}', created_at: new Date().toISOString() })
+    });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows[0] || null;
+  } catch(e){ return null; }
+}
+
+async function supaGetLiveSession(code){
+  try {
+    const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions?code=eq.${code}&select=*`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } });
+    if(!res.ok) return null;
+    const rows = await res.json();
+    return rows[0] || null;
+  } catch(e){ return null; }
+}
+
+async function supaUpdateLiveSession(code, patch){
+  try {
+    await fetch(`${SUPA_URL}/rest/v1/live_sessions?code=eq.${code}`, {
+      method: 'PATCH',
+      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch)
+    });
+  } catch(e){}
+}
+
+async function supaSubmitLiveAnswer(code, name, qIdx, answer){
+  try {
+    const sess = await supaGetLiveSession(code);
+    if(!sess) return;
+    const answers = JSON.parse(sess.answers||'{}');
+    if(!answers[qIdx]) answers[qIdx] = {};
+    answers[qIdx][name] = answer;
+    await supaUpdateLiveSession(code, { answers: JSON.stringify(answers) });
+  } catch(e){}
+}
+
+let liveQuizInterval = null;
+
+function renderLiveQuizHost(empNames){
+  // Build 5 random questions
+  const pool = DISHES.sort(()=>Math.random()-.5).slice(0,5);
+  const questions = pool.map(d => {
+    const topic = TOPICS[Math.floor(Math.random()*TOPICS.length)];
+    const correct = (topic.a(d)||'').trim();
+    const wrongs = DISHES.filter(x=>x.id!==d.id).sort(()=>Math.random()-.5).slice(0,3).map(x=>(topic.a(x)||'').trim()).filter(w=>w&&w!==correct);
+    const choices = [correct,...wrongs.slice(0,3)].sort(()=>Math.random()-.5);
+    return { dish: d.name, topic: topic.label, correct, choices, correctIdx: choices.indexOf(correct) };
+  });
+
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="stopLiveQuiz();renderSupDashboard();" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">🎯 Quiz en vivo</div>
+    </div>
+    <div id="liveQuizHostContent">
+      <div style="text-align:center;padding:2rem;color:var(--parch3);font-family:'DM Mono',monospace;font-size:.72rem">⏳ Creando sesión...</div>
+    </div>
+  </div>`;
+
+  supaCreateLiveSession(questions).then(sess => {
+    if(!sess){ document.getElementById('liveQuizHostContent').innerHTML='<div style="color:var(--rose);text-align:center;padding:1rem">Error al crear sesión. Verifica la tabla live_sessions en Supabase.</div>'; return; }
+    const code = sess.code;
+    document.getElementById('liveQuizHostContent').innerHTML = `
+      <div style="text-align:center;background:var(--gold-b);border:2px solid var(--gold-a);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.4rem">Código de sesión</div>
+        <div style="font-family:'Playfair Display',serif;font-size:3rem;color:var(--gold);letter-spacing:.15em;font-weight:700">${code}</div>
+        <div style="font-size:.75rem;color:var(--parch3);margin-top:.4rem">Los empleados introducen este código en la app</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:1rem;margin-bottom:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);text-transform:uppercase;letter-spacing:.12em;margin-bottom:.5rem">Participantes conectados</div>
+        <div id="liveParticipants" style="font-size:.82rem;color:var(--parch3);font-style:italic">Esperando...</div>
+      </div>
+      <div id="liveQuizProgress" style="margin-bottom:1rem"></div>
+      <div style="display:flex;gap:.5rem">
+        <button onclick="advanceLiveQuiz('${code}',${JSON.stringify(questions).replace(/'/g,"\'")})" id="liveNextBtn" class="btn-primary" style="flex:1">▶ Iniciar quiz</button>
+        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" class="btn-secondary">✕ Terminar</button>
+      </div>`;
+
+    // Poll for participants
+    liveQuizInterval = setInterval(async () => {
+      const s = await supaGetLiveSession(code);
+      if(!s) return;
+      const answers = JSON.parse(s.answers||'{}');
+      const participants = [...new Set(Object.values(answers).flatMap(q=>Object.keys(q)))];
+      const pEl = document.getElementById('liveParticipants');
+      if(pEl) pEl.innerHTML = participants.length
+        ? participants.map(p=>`<span style="display:inline-block;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:20px;padding:.2rem .6rem;font-size:.75rem;color:var(--gold);margin:.15rem">${p} ✓</span>`).join('')
+        : '<span style="color:var(--parch3);font-style:italic">Esperando participantes...</span>';
+
+      // Show current question results
+      const qIdx = s.current_q;
+      if(qIdx > 0 && answers[qIdx-1]) {
+        const q = questions[qIdx-1];
+        const qAnswers = answers[qIdx-1];
+        const correctCount = Object.values(qAnswers).filter(a=>a===q.correct).length;
+        const total = Object.values(qAnswers).length;
+        const pEl2 = document.getElementById('liveQuizProgress');
+        if(pEl2 && q) pEl2.innerHTML = `<div style="background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:.85rem 1rem">
+          <div style="font-size:.78rem;color:var(--parch3);margin-bottom:.35rem">Pregunta ${qIdx}: ${q.dish} — ${q.topic}</div>
+          <div style="font-size:.85rem;color:var(--parchment);margin-bottom:.5rem">Respuesta correcta: <strong>${q.correct}</strong></div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;color:${correctCount/Math.max(1,total)>=.7?'var(--sage)':'var(--rose)'}">✓ ${correctCount}/${total} correctos</div>
+        </div>`;
+      }
+    }, 2500);
+  });
+}
+
+let liveCurrentQ = 0;
+async function advanceLiveQuiz(code, questions){
+  if(liveCurrentQ >= questions.length){
+    await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
+    stopLiveQuiz();
+    alert('¡Quiz terminado! Revisa los resultados en la pantalla.');
+    return;
+  }
+  await supaUpdateLiveSession(code, { state: 'active', current_q: liveCurrentQ });
+  liveCurrentQ++;
+  const btn = document.getElementById('liveNextBtn');
+  if(btn) btn.textContent = liveCurrentQ >= questions.length ? '🏁 Finalizar quiz' : `▶ Pregunta ${liveCurrentQ+1} de ${questions.length}`;
+}
+
+function stopLiveQuiz(){
+  if(liveQuizInterval){ clearInterval(liveQuizInterval); liveQuizInterval=null; }
+  liveCurrentQ = 0;
+}
+
+// ═══ PARTICIPAR EN QUIZ EN VIVO (vista empleado) ═══
+function renderJoinLiveQuiz(){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:1.5rem 1rem">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="showTab('dashboard')" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">🎯 Unirse al quiz</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem">Código de sesión</div>
+      <input id="liveCode" maxlength="4" placeholder="1234" inputmode="numeric" style="width:100%;text-align:center;font-family:'Playfair Display',serif;font-size:2.5rem;color:var(--gold);border:2px solid var(--gold-a);border-radius:var(--r2);padding:.6rem;letter-spacing:.3em;background:var(--gold-b)">
+    </div>
+    <button onclick="joinLiveQuiz()" class="btn-primary" style="width:100%;padding:.85rem">Unirse →</button>
+    <div id="liveJoinError" style="text-align:center;color:var(--rose);font-size:.75rem;margin-top:.5rem;display:none">Código no encontrado o sesión terminada</div>
+  </div>`;
+}
+
+let livePlayerInterval = null;
+let livePlayerLastQ = -1;
+
+async function joinLiveQuiz(){
+  const code = document.getElementById('liveCode')?.value.trim();
+  if(!code || code.length < 4) return;
+  const sess = await supaGetLiveSession(code);
+  if(!sess || sess.state === 'ended'){
+    const el = document.getElementById('liveJoinError');
+    if(el) el.style.display='block';
+    return;
+  }
+  livePlayerLastQ = -1;
+  renderLiveQuizWaiting(code, JSON.parse(sess.questions||'[]'));
+}
+
+function renderLiveQuizWaiting(code, questions){
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div style="max-width:420px;margin:0 auto;padding:2rem 1rem;text-align:center">
+    <div style="font-size:3rem;margin-bottom:1rem">⏳</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--parchment);margin-bottom:.5rem">Conectado</div>
+    <div style="font-size:.8rem;color:var(--parch3);margin-bottom:.5rem">Esperando al supervisor...</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--gold);letter-spacing:.15em">Código: ${code}</div>
+    <div id="livePlayerContent" style="margin-top:1.5rem"></div>
+  </div>`;
+
+  if(livePlayerInterval) clearInterval(livePlayerInterval);
+  livePlayerInterval = setInterval(async () => {
+    const sess = await supaGetLiveSession(code);
+    if(!sess) return;
+    if(sess.state === 'ended'){ clearInterval(livePlayerInterval); renderLiveQuizPlayerEnd(code, questions, JSON.parse(sess.answers||'{}')); return; }
+    if(sess.state === 'active' && sess.current_q !== livePlayerLastQ){
+      livePlayerLastQ = sess.current_q;
+      const qIdx = sess.current_q - 1;
+      if(qIdx >= 0 && qIdx < questions.length) renderLiveQuizQuestion(code, questions, qIdx, JSON.parse(sess.answers||'{}'));
+    }
+  }, 2000);
+}
+
+function renderLiveQuizQuestion(code, questions, qIdx, existingAnswers){
+  const q = questions[qIdx];
+  const myAnswer = existingAnswers[qIdx]?.[currentUser];
+  const pEl = document.getElementById('livePlayerContent') || document.getElementById('appContent');
+  pEl.innerHTML = `
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;text-align:left">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);margin-bottom:.3rem">Pregunta ${qIdx+1} de ${questions.length} · ${q.topic}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment);margin-bottom:1rem">${q.dish}</div>
+      ${q.choices.map((ch,i)=>`
+        <button onclick="submitLiveAnswer('${code}',${JSON.stringify(questions)},${qIdx},'${ch.replace(/'/g,"\'")}')"
+          style="width:100%;text-align:left;padding:.75rem 1rem;margin-bottom:.4rem;border:2px solid ${myAnswer===ch?(ch===q.correct?'var(--sage)':'var(--rose)'):'var(--line)'};border-radius:var(--r2);background:${myAnswer===ch?(ch===q.correct?'rgba(61,122,84,.1)':'rgba(168,64,64,.08)'):'#fff'};font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);cursor:pointer;transition:all .2s"
+          ${myAnswer?'disabled':''}>
+          ${String.fromCharCode(65+i)}. ${ch}
+        </button>`).join('')}
+      ${myAnswer?`<div style="text-align:center;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3);margin-top:.5rem">Respuesta enviada · Espera la siguiente pregunta</div>`:''}
+    </div>`;
+}
+
+async function submitLiveAnswer(code, questions, qIdx, answer){
+  await supaSubmitLiveAnswer(code, currentUser, qIdx, answer);
+  const sess = await supaGetLiveSession(code);
+  if(sess) renderLiveQuizQuestion(code, questions, qIdx, JSON.parse(sess.answers||'{}'));
+}
+
+function renderLiveQuizPlayerEnd(code, questions, answers){
+  if(livePlayerInterval){ clearInterval(livePlayerInterval); livePlayerInterval=null; }
+  let correct = 0;
+  questions.forEach((q,i)=>{ if(answers[i]?.[currentUser]===q.correct) correct++; });
+  const pct = Math.round(correct/questions.length*100);
+  const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+  awardXP(correct*5, '🎯 Quiz en vivo');
+  document.getElementById('appContent').innerHTML = `<div style="max-width:420px;margin:0 auto;padding:2rem 1rem;text-align:center">
+    <div style="font-size:3rem;margin-bottom:.75rem">${pct>=80?'🏆':pct>=50?'👍':'💪'}</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.25rem">Quiz terminado</div>
+    <div style="font-size:2.5rem;font-family:'Playfair Display',serif;color:${col};margin:.5rem 0">${pct}%</div>
+    <div style="font-size:.82rem;color:var(--parch3);margin-bottom:1.5rem">${correct} de ${questions.length} correctas · +${correct*5} XP</div>
+    ${questions.map((q,i)=>{
+      const mine = answers[i]?.[currentUser];
+      const ok = mine===q.correct;
+      return `<div style="background:#fff;border:1px solid ${ok?'rgba(61,122,84,.3)':'rgba(168,64,64,.2)'};border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:.4rem;text-align:left">
+        <div style="font-size:.8rem;color:var(--parchment)">${ok?'✅':'❌'} ${q.dish}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--parch4);margin-top:.2rem">${mine||'Sin respuesta'} ${!ok?'→ '+q.correct:''}</div>
+      </div>`;
+    }).join('')}
+    <button onclick="showTab('dashboard')" class="btn-primary" style="width:100%;margin-top:1rem">Volver al inicio</button>
+  </div>`;
 }
 
 // ═══ CARTA EDITOR ═══
@@ -4733,7 +6712,8 @@ function renderCartaEditor(){
       </select>
     </div>
     <div id="cartaDishList"></div>
-    <button class="btn-secondary" onclick="renderSupDashboard()" style="width:100%;margin-top:.75rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
+    <button onclick="renderCartaNewDish()" style="width:100%;padding:.8rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.85rem;font-weight:600;color:var(--gold);cursor:pointer;margin-bottom:.5rem">+ ${LANG==='en'?'Add new dish':'Añadir nuevo plato'}</button>
+    <button class="btn-secondary" onclick="renderSupDashboard()" style="width:100%;margin-top:.25rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
   </div>`;
   renderCartaList();
 }
@@ -4803,15 +6783,119 @@ function saveCartaDish(id){
     overrides[id] = {allergens:d.allergens,cutlery:d.cutlery,ingredients:d.ingredients,history:d.history,notes:d.notes};
     localStorage.setItem('txoko_carta_overrides', JSON.stringify(overrides));
   } catch(e){}
+  // If it's a custom dish (added by supervisor), sync to Supabase
+  try {
+    const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    if(newIds.find(x=>x.id===id)) supaUpsertCustomDish(d);
+  } catch(e){}
   const msg = document.getElementById('cartaSaveMsg');
   if(msg){ msg.style.display='block'; setTimeout(()=>msg.style.display='none',2000); }
+}
+
+// ═══ NUEVO PLATO ═══
+function renderCartaNewDish(){
+  const cats = [...new Set(DISHES.map(d=>d.cat))];
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem">
+      <button onclick="renderCartaEditor()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--parchment)">${LANG==='en'?'New dish':'Nuevo plato'}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Nombre *</div>
+      <input id="newDishName" type="text" placeholder="Ej: Tartar de atún" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.85rem;color:var(--parchment);box-sizing:border-box">
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Categoría *</div>
+      <select id="newDishCat" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);background:#fff">
+        ${cats.map(c=>`<option value="${c}">${c}</option>`).join('')}
+        <option value="__nueva__">+ ${LANG==='en'?'New category':'Nueva categoría'}...</option>
+      </select>
+      <input id="newDishCatCustom" type="text" placeholder="${LANG==='en'?'Category name':'Nombre de categoría'}" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parchment);box-sizing:border-box;margin-top:.5rem;display:none">
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Alérgenos</div>
+      <textarea id="newDishAllergens" rows="2" placeholder="Ej: Gluten, Lácteos, Huevo" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Marcaje</div>
+      <textarea id="newDishCutlery" rows="2" placeholder="Ej: Cuchara sopera, tenedor de pescado" style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:.75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Ingredientes</div>
+      <textarea id="newDishIngredients" rows="4" placeholder="Ingredientes principales..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:1.25rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">Historia / Storytelling</div>
+      <textarea id="newDishHistory" rows="4" placeholder="Historia o descripción del plato..." style="width:100%;border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .8rem;font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parchment);resize:vertical"></textarea>
+    </div>
+    <div id="newDishError" style="color:var(--rose);font-size:.75rem;font-family:'DM Mono',monospace;margin-bottom:.5rem;display:none"></div>
+    <button onclick="saveNewDish()" class="btn-primary" style="width:100%;padding:.85rem">💾 ${LANG==='en'?'Add dish':'Añadir plato'}</button>
+  </div>`;
+
+  // Show/hide custom category input
+  setTimeout(()=>{
+    const sel = document.getElementById('newDishCat');
+    const inp = document.getElementById('newDishCatCustom');
+    if(sel&&inp) sel.addEventListener('change', ()=>{
+      inp.style.display = sel.value==='__nueva__' ? 'block' : 'none';
+    });
+  }, 100);
+}
+
+function saveNewDish(){
+  const name = document.getElementById('newDishName')?.value.trim();
+  const catSel = document.getElementById('newDishCat')?.value;
+  const catCustom = document.getElementById('newDishCatCustom')?.value.trim();
+  const cat = catSel==='__nueva__' ? catCustom : catSel;
+  const errEl = document.getElementById('newDishError');
+
+  if(!name){ if(errEl){errEl.textContent='⚠️ El nombre es obligatorio';errEl.style.display='block';} return; }
+  if(!cat){ if(errEl){errEl.textContent='⚠️ Selecciona o escribe una categoría';errEl.style.display='block';} return; }
+  if(errEl) errEl.style.display='none';
+
+  const allergens = (document.getElementById('newDishAllergens')?.value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const cutlery = (document.getElementById('newDishCutlery')?.value||'').trim();
+  const ingredients = (document.getElementById('newDishIngredients')?.value||'').trim();
+  const history = (document.getElementById('newDishHistory')?.value||'').trim();
+
+  // Generate new unique ID
+  const newId = Math.max(0, ...DISHES.map(d=>d.id)) + 1;
+
+  const newDish = { id: newId, name, cat, allergens, cutlery, ingredients, history, notes: null };
+  DISHES.push(newDish);
+
+  // Persist locally
+  try {
+    const newIds = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    newIds.push(newDish);
+    localStorage.setItem('txoko_new_dishes', JSON.stringify(newIds));
+  } catch(e){}
+  // Sync to Supabase
+  supaUpsertCustomDish(newDish);
+
+  // Confirm toast
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;padding:.55rem 1.3rem;border-radius:30px;font-family:Jost,sans-serif;font-size:.82rem;font-weight:600;z-index:9999;white-space:nowrap';
+  toast.textContent = '✓ ' + (LANG==='en'?`"${name}" added`:`"${name}" añadido`);
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2500);
+
+  renderCartaEditor();
 }
 
 // Load carta overrides on startup
 function loadCartaOverrides(){
   try {
+    // Load new dishes added by supervisor
+    const newDishes = JSON.parse(localStorage.getItem('txoko_new_dishes')||'[]');
+    newDishes.forEach(d => {
+      if(d && d.id && !DISHES.find(x=>x.id===d.id)) DISHES.push(d);
+    });
+    // Load edits to existing dishes
     const overrides = JSON.parse(localStorage.getItem('txoko_carta_overrides')||'{}');
     Object.entries(overrides).forEach(([id,data])=>{
+      if(id.startsWith('new_')) return; // already loaded above
       const d = DISHES.find(x=>x.id===parseInt(id));
       if(d){ Object.assign(d,data); }
     });
