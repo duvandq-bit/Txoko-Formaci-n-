@@ -2400,6 +2400,29 @@ async function supaUpsertEmployee(name) {
   } catch(e) { /* silent — local always saved */ }
 }
 
+async function supaRestoreEmployee(name) {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/employees?name=eq.${encodeURIComponent(name)}&select=*`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+    );
+    if(!res.ok) return;
+    const rows = await res.json();
+    if(!Array.isArray(rows) || !rows.length) return;
+    const r = rows[0];
+    if(!r.xp || r.xp === 0) return; // nothing useful to restore
+    const emp = getEmp(name);
+    emp.xp = r.xp;
+    emp.streak = r.streak || emp.streak;
+    emp.lastStudyDay = r.last_study_day || emp.lastStudyDay;
+    emp.txokoRecord = r.txoko_record || emp.txokoRecord;
+    try { const ts = JSON.parse(r.topic_scores||'{}'); if(Object.keys(ts).length) emp.topicScores = ts; } catch(e){}
+    try { const kd = JSON.parse(r.known_dishes||'{}'); if(Object.keys(kd).length) emp.knownDishes = kd; } catch(e){}
+    try { const ec = JSON.parse(r.exam_correct||'{}'); if(Object.keys(ec).length) emp.examCorrect = ec; } catch(e){}
+    saveDB();
+  } catch(e) {}
+}
+
 async function supaFetchAllEmployees() {
   try {
     const res = await fetch(
@@ -2440,36 +2463,36 @@ function getEmp(name){
 // ═══════════════════════════════════════════════════
 
 const XP_LEVELS = [
-  {level: 1, xp:0     ,icon:'🥄', title:'Becario Perdido',                          desc:'Aún no sabes dónde está la carta...',                title_en:'The Lost Intern',                     desc_en:'You still can\'t find the menu...'},
-  {level: 2, xp:100   ,icon:'📋', title:'Porta-Cartas',                             desc:'Ya sabes abrir la puerta del restaurante',           title_en:'Menu Carrier',                        desc_en:'You can now open the restaurant door'},
-  {level: 3, xp:200   ,icon:'🍽️', title:'Aprendiz de Sala',                         desc:'Tu primera mesa sin catástrofes',                    title_en:'Floor Apprentice',                    desc_en:'Your first table without disaster'},
-  {level: 4, xp:350   ,icon:'👔', title:'Camarero Novato',                          desc:'El uniforme ya no te queda raro',                    title_en:'Rookie Waiter',                       desc_en:'The uniform finally fits right'},
-  {level: 5, xp:500   ,icon:'⚠️', title:'Conocedor de Alérgenos',                   desc:'Sabes que el gluten existe',                         title_en:'Allergen Aware',                      desc_en:'You know that gluten is a thing'},
-  {level: 6, xp:700   ,icon:'🍴', title:'Guardián del Marcaje',                     desc:'Tenedor a la izquierda, siempre',                    title_en:'Cutlery Guardian',                    desc_en:'Fork on the left, always'},
-  {level: 7, xp:950   ,icon:'📜', title:'Narrador de Platos',                       desc:'El cliente escucha embobado',                        title_en:'Dish Storyteller',                    desc_en:'The guest listens, spellbound'},
-  {level: 8, xp:1200  ,icon:'🛡️', title:'Escudero del Servicio',                    desc:'Cubres las espaldas del equipo',                     title_en:'Service Squire',                      desc_en:'You have the team\'s back'},
-  {level: 9, xp:1550  ,icon:'⚔️', title:'Caballero de la Sala',                     desc:'Ninguna queja sobrevive tu turno',                   title_en:'Knight of the Floor',                 desc_en:'No complaint survives your shift'},
-  {level:10, xp:1900  ,icon:'👑', title:'Señor de las Comandas',                    desc:'Las mesas te respetan',                              title_en:'Lord of Orders',                      desc_en:'The tables respect you'},
-  {level:11, xp:2350  ,icon:'⚗️', title:'Alquimista del Sabor',                     desc:'Conviertes ingredientes en historias',               title_en:'Flavour Alchemist',                   desc_en:'You turn ingredients into stories'},
-  {level:12, xp:2900  ,icon:'🍷', title:'Maestro Sumiller',                         desc:'El maridaje te habla en sueños',                     title_en:'Master Sommelier',                    desc_en:'Pairings speak to you in dreams'},
-  {level:13, xp:3500  ,icon:'🌟', title:'Guardián de Berasategui',                  desc:'Martín te ha visto y ha asentido',                   title_en:'Berasategui\'s Guardian',              desc_en:'Martín has seen you and nodded'},
-  {level:14, xp:4200  ,icon:'🎋', title:'Sensei del Fine Dining',                   desc:'Tus movimientos son pura coreografía',               title_en:'Fine Dining Sensei',                  desc_en:'Your movements are pure choreography'},
-  {level:15, xp:5100  ,icon:'🏰', title:'Leyenda de Abama',                         desc:'El hotel susurra tu nombre',                         title_en:'Legend of Abama',                     desc_en:'The hotel whispers your name'},
-  {level:16, xp:6100  ,icon:'👻', title:'Fantasma del Servicio',                    desc:'Sirves sin que nadie te vea',                        title_en:'Ghost of Service',                    desc_en:'You serve without being seen'},
-  {level:17, xp:7300  ,icon:'🔮', title:'Oráculo de la Carta',                      desc:'Sabes lo que el cliente quiere antes que él',        title_en:'Oracle of the Menu',                  desc_en:'You know what the guest wants before they do'},
-  {level:18, xp:8700  ,icon:'🐉', title:'Dragón de la Hospitalidad',                desc:'Tu presencia transforma la sala',                    title_en:'Dragon of Hospitality',               desc_en:'Your presence transforms the room'},
-  {level:19, xp:10400 ,icon:'🧙', title:'Archimago del Servicio',                   desc:'Doblas el espacio-tiempo entre mesas',               title_en:'Archmage of Service',                 desc_en:'You bend space-time between tables'},
-  {level:20, xp:12350 ,icon:'⚡', title:'Dios de los Cubiertos',                    desc:'Los tenedores se alinean solos',                     title_en:'God of Cutlery',                      desc_en:'The forks align themselves'},
-  {level:21, xp:14650 ,icon:'🗿', title:'Titán de la Hospitalidad',                 desc:'Llevas el servicio sobre los hombros',               title_en:'Titan of Hospitality',                desc_en:'You carry the service on your shoulders'},
-  {level:22, xp:17400 ,icon:'🔥', title:'Rey del Josper',                           desc:'El fuego te obedece',                                title_en:'King of the Josper',                  desc_en:'The fire obeys you'},
-  {level:23, xp:20650 ,icon:'🌊', title:'Semidiós del Menú',                        desc:'Fluyes entre mesas como marea',                      title_en:'Demigod of the Menu',                 desc_en:'You flow between tables like a tide'},
-  {level:24, xp:24450 ,icon:'🌀', title:'Avatar del Servicio',                      desc:'Eres uno con la sala',                               title_en:'Avatar of Service',                   desc_en:'You are one with the floor'},
-  {level:25, xp:28950 ,icon:'💎', title:'Inmortal de Txoko',                        desc:'La leyenda no muere',                                title_en:'Immortal of Txoko',                   desc_en:'The legend never dies'},
-  {level:26, xp:34250 ,icon:'🌌', title:'El Elegido',                               desc:'Martín te llama por tu nombre completo',             title_en:'The Chosen One',                      desc_en:'Martín calls you by your full name'},
-  {level:27, xp:40550 ,icon:'🪐', title:'Maestro del Universo',                     desc:'Otros restaurantes te estudian',                     title_en:'Master of the Universe',              desc_en:'Other restaurants study you'},
-  {level:28, xp:47900 ,icon:'👁️', title:'Dios del Fine Dining',                     desc:'Ves más allá del menú',                              title_en:'God of Fine Dining',                  desc_en:'You see beyond the menu'},
-  {level:29, xp:56650 ,icon:'⚜️', title:'Mito Viviente',                            desc:'Tu sola presencia sube el Michelin',                 title_en:'Living Myth',                         desc_en:'Your presence alone raises the Michelin'},
-  {level:30, xp:66950 ,icon:'🌠', title:'La Estrella de Txoko',                     desc:'Eres Txoko',                                         title_en:'The Star of Txoko',                   desc_en:'You are Txoko'},
+  {level: 1, xp:0          ,icon:'🥄', title:'Becario Perdido',                          desc:'Aún no sabes dónde está la carta...',                title_en:'The Lost Intern',                     desc_en:'You still can\'t find the menu...'},
+  {level: 2, xp:100      ,icon:'📋', title:'Porta-Cartas',                             desc:'Ya sabes abrir la puerta del restaurante',           title_en:'Menu Carrier',                        desc_en:'You can now open the restaurant door'},
+  {level: 3, xp:218      ,icon:'🍽️', title:'Aprendiz de Sala',                         desc:'Tu primera mesa sin catástrofes',                    title_en:'Floor Apprentice',                    desc_en:'Your first table without disaster'},
+  {level: 4, xp:357      ,icon:'👔', title:'Camarero Novato',                          desc:'El uniforme ya no te queda raro',                    title_en:'Rookie Waiter',                       desc_en:'The uniform finally fits right'},
+  {level: 5, xp:521      ,icon:'⚠️', title:'Conocedor de Alérgenos',                   desc:'Sabes que el gluten existe',                         title_en:'Allergen Aware',                      desc_en:'You know that gluten is a thing'},
+  {level: 6, xp:715      ,icon:'🍴', title:'Guardián del Marcaje',                     desc:'Tenedor a la izquierda, siempre',                    title_en:'Cutlery Guardian',                    desc_en:'Fork on the left, always'},
+  {level: 7, xp:944      ,icon:'📜', title:'Narrador de Platos',                       desc:'El cliente escucha embobado',                        title_en:'Dish Storyteller',                    desc_en:'The guest listens, spellbound'},
+  {level: 8, xp:1214    ,icon:'🛡️', title:'Escudero del Servicio',                    desc:'Cubres las espaldas del equipo',                     title_en:'Service Squire',                      desc_en:'You have the team\'s back'},
+  {level: 9, xp:1533    ,icon:'⚔️', title:'Caballero de la Sala',                     desc:'Ninguna queja sobrevive tu turno',                   title_en:'Knight of the Floor',                 desc_en:'No complaint survives your shift'},
+  {level:10, xp:1909    ,icon:'👑', title:'Señor de las Comandas',                    desc:'Las mesas te respetan',                              title_en:'Lord of Orders',                      desc_en:'The tables respect you'},
+  {level:11, xp:2353    ,icon:'⚗️', title:'Alquimista del Sabor',                     desc:'Conviertes ingredientes en historias',               title_en:'Flavour Alchemist',                   desc_en:'You turn ingredients into stories'},
+  {level:12, xp:2876    ,icon:'🍷', title:'Maestro Sumiller',                         desc:'El maridaje te habla en sueños',                     title_en:'Master Sommelier',                    desc_en:'Pairings speak to you in dreams'},
+  {level:13, xp:3494    ,icon:'🌟', title:'Guardián de Berasategui',                  desc:'Martín te ha visto y ha asentido',                   title_en:'Berasategui\'s Guardian',              desc_en:'Martín has seen you and nodded'},
+  {level:14, xp:4223    ,icon:'🎋', title:'Sensei del Fine Dining',                   desc:'Tus movimientos son pura coreografía',               title_en:'Fine Dining Sensei',                  desc_en:'Your movements are pure choreography'},
+  {level:15, xp:5083    ,icon:'🏰', title:'Leyenda de Abama',                         desc:'El hotel susurra tu nombre',                         title_en:'Legend of Abama',                     desc_en:'The hotel whispers your name'},
+  {level:16, xp:6098    ,icon:'👻', title:'Fantasma del Servicio',                    desc:'Sirves sin que nadie te vea',                        title_en:'Ghost of Service',                    desc_en:'You serve without being seen'},
+  {level:17, xp:7295    ,icon:'🔮', title:'Oráculo de la Carta',                      desc:'Sabes lo que el cliente quiere antes que él',        title_en:'Oracle of the Menu',                  desc_en:'You know what the guest wants before they do'},
+  {level:18, xp:8708    ,icon:'🐉', title:'Dragón de la Hospitalidad',                desc:'Tu presencia transforma la sala',                    title_en:'Dragon of Hospitality',               desc_en:'Your presence transforms the room'},
+  {level:19, xp:10375  ,icon:'🧙', title:'Archimago del Servicio',                   desc:'Doblas el espacio-tiempo entre mesas',               title_en:'Archmage of Service',                 desc_en:'You bend space-time between tables'},
+  {level:20, xp:12342  ,icon:'⚡', title:'Dios de los Cubiertos',                    desc:'Los tenedores se alinean solos',                     title_en:'God of Cutlery',                      desc_en:'The forks align themselves'},
+  {level:21, xp:14663  ,icon:'🗿', title:'Titán de la Hospitalidad',                 desc:'Llevas el servicio sobre los hombros',               title_en:'Titan of Hospitality',                desc_en:'You carry the service on your shoulders'},
+  {level:22, xp:17402  ,icon:'🔥', title:'Rey del Josper',                           desc:'El fuego te obedece',                                title_en:'King of the Josper',                  desc_en:'The fire obeys you'},
+  {level:23, xp:20634  ,icon:'🌊', title:'Semidiós del Menú',                        desc:'Fluyes entre mesas como marea',                      title_en:'Demigod of the Menu',                 desc_en:'You flow between tables like a tide'},
+  {level:24, xp:24448  ,icon:'🌀', title:'Avatar del Servicio',                      desc:'Eres uno con la sala',                               title_en:'Avatar of Service',                   desc_en:'You are one with the floor'},
+  {level:25, xp:28949  ,icon:'💎', title:'Inmortal de Txoko',                        desc:'La leyenda no muere',                                title_en:'Immortal of Txoko',                   desc_en:'The legend never dies'},
+  {level:26, xp:34260  ,icon:'🌌', title:'El Elegido',                               desc:'Martín te llama por tu nombre completo',             title_en:'The Chosen One',                      desc_en:'Martín calls you by your full name'},
+  {level:27, xp:40527  ,icon:'🪐', title:'Maestro del Universo',                     desc:'Otros restaurantes te estudian',                     title_en:'Master of the Universe',              desc_en:'Other restaurants study you'},
+  {level:28, xp:47922  ,icon:'👁️', title:'Dios del Fine Dining',                     desc:'Ves más allá del menú',                              title_en:'God of Fine Dining',                  desc_en:'You see beyond the menu'},
+  {level:29, xp:56648  ,icon:'⚜️', title:'Mito Viviente',                            desc:'Tu sola presencia sube el Michelin',                 title_en:'Living Myth',                         desc_en:'Your presence alone raises the Michelin'},
+  {level:30, xp:66945  ,icon:'🌠', title:'La Estrella de Txoko',                     desc:'Eres Txoko',                                         title_en:'The Star of Txoko',                   desc_en:'You are Txoko'},
 ];
 
 function xpForLevel(lvl){ return XP_LEVELS[Math.min(lvl-1,XP_LEVELS.length-1)].xp; }
@@ -2982,13 +3005,22 @@ function closePinAndEnter(){
   document.getElementById('screenLogin').classList.remove('active');
   document.getElementById('screenApp').classList.add('active');
   applyLangToApp();
-  showTab('dashboard');
-  checkStreak();
-  // Sync this user's data to Supabase (so supervisor can see all users)
-  supaUpsertEmployee(currentUser);
   // Show supervisor tab for Duvan
   const _supBtn=document.getElementById('navSupervisor');
   if(_supBtn) _supBtn.style.display=currentUser==='Duvan'?'':'none';
+  // If local XP is 0, try to restore from Supabase before showing dashboard
+  const localEmp = getEmp(currentUser);
+  if(!localEmp.xp || localEmp.xp === 0){
+    supaRestoreEmployee(currentUser).then(() => {
+      showTab('dashboard');
+      checkStreak();
+      supaUpsertEmployee(currentUser);
+    });
+  } else {
+    showTab('dashboard');
+    checkStreak();
+    supaUpsertEmployee(currentUser);
+  }
 }
 
 function pinCancel(){
