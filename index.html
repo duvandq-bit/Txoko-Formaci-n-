@@ -1829,7 +1829,7 @@ const DISHES = [
   {id:81,cat:'Entrantes',name:'Coca de tomate',allergens:['Frutos de cáscara','Gluten','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Harina, Agua, Levadura, Sal, Aceite. Tomate: Aceto balsámico, Ajo, Azúcar, Romero, Orégano, Tomillo, Aceite de oliva. Jamón ibérico, Queso muzarella',history:'',notes:null},
   {id:82,cat:'Entrantes',name:'Tabla de quesos canarios',allergens:['Frutos de cáscara','Gluten','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Quesos, Gofio, Pimentón, Batata, Azúcar, Agua, Naranja, Vainilla, Canela, Clavo, Tomate, Higos, Aceituna Kalamata, Almendras, Pan.',history:'Tabla de quesos canarios: queso de vaca y oveja 50/50, queso de cabra curado con pimentón, queso de cabra curado con gofio. Acompañados de relish de higos, aceitunas kalamata y almendras, mermelada de tomate y batata de Lanzarote en almíbar de naranja, vainilla, canela y clavo.',notes:null},
   {id:83,cat:'Entrantes',name:'Tabla de embutidos',allergens:['Dióxido de azufre y sulfitos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Jamón ibérico, Salchichón ibérico, Chorizo ibérico, Lomo ibérico, Crujiente de pan, Tomate',history:'Nuestros embutidos provienen de Casalba, que nacen en Burgos, elaborados de forma artesanal, donde el clima seco y la tradición familiar marcan el ritmo del curado.',notes:null},
-  {id:84,cat:'Entrantes',name:'Paletilla Ibérica de bellota',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Dióxido de azufre y sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'',history:'',notes:null},
+  {id:84,cat:'Entrantes',name:'Paletilla Ibérica de bellota',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Dióxido de azufre y sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'',history:'',notes:null},
   {id:85,cat:'Entrantes',name:'Cecina de Wagyu Premium',allergens:['Dióxido de azufre y sulfitos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Cecina de Wagyu Premium',history:'Nuestros embutidos provienen de Casalba, que nacen en Burgos, elaborados de forma artesanal, donde el clima seco y la tradición familiar marcan el ritmo del curado.',notes:null},
   // ===== HAMBURGUESAS Y BOCATAS =====
   {id:86,cat:'Hamburguesas y Bocatas',name:'Hamburguesa vegana',allergens:['Gluten','Dióxido de azufre y sulfitos','Soja','Huevos'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Proteína de soja, Guisantes, Pan de semillas, Cebolla, Huevo, Panko, Lechuga, Tomate. Chimichurri: Tomate deshidratado, Cebolleta, Pimiento rojo y verde, Ajo, Aceite de oliva, Vinagre de Jerez, Ají, Limón, Perejil, Cebollino, Sal, Pimienta negra',history:'',notes:null},
@@ -5246,11 +5246,93 @@ function refreshTxTop10(){
 }
 
 // ── Game flow ────────────────────────────────────────
-function txStart(){
+function txStart(skipIntro){
   if(txokoTimer) clearInterval(txokoTimer);
-  txokoState={score:0,lives:3,streak:0,answered:false,question:null,
+  if(!skipIntro){ txShowIntro(); return; }
+  txokoState={score:0,lives:5,streak:0,answered:false,question:null,
     patienceMax:12,patienceLeft:12,startTime:Date.now()};
   txNext();
+}
+
+function txShowIntro(){
+  const c = document.getElementById('appContent');
+  // Use the calm face (5 lives) as the portrait
+  const portrait = txClientFace(5, 100);
+
+  c.innerHTML = `<div class="txoko-wrap" style="animation:fadeIn .5s ease">
+    <div style="max-width:380px;margin:0 auto;padding:1.5rem 1.25rem;text-align:center">
+
+      <!-- Header -->
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.2rem;opacity:.8">
+        ✦ ${LANG==='en'?'Ritz-Carlton Abama · Tonight':'Ritz-Carlton Abama · Esta noche'} ✦
+      </div>
+
+      <!-- Portrait frame -->
+      <div style="position:relative;display:inline-block;margin-bottom:1.25rem">
+        <div style="width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,var(--gold-b),#fff8ee);border:2.5px solid var(--gold-a);display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:0 4px 24px rgba(201,168,76,.15)">
+          <div style="transform:scale(1.6);transform-origin:center">${portrait}</div>
+        </div>
+        <!-- Badge -->
+        <div style="position:absolute;bottom:-4px;right:-4px;background:var(--gold);color:var(--ink);font-family:'DM Mono',monospace;font-size:.5rem;font-weight:600;padding:.25rem .5rem;border-radius:20px;letter-spacing:.08em;white-space:nowrap">
+          ${LANG==='en'?'VIP · Table 1':'VIP · Mesa 1'}
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--parchment);font-weight:700;margin-bottom:.2rem">
+        Don Augusto
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.25rem;opacity:.85">
+        ${LANG==='en'?'Most demanding guest · 14 years running':'Huésped más exigente · 14 años consecutivos'}
+      </div>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;opacity:.4">
+        <div style="flex:1;height:1px;background:var(--gold)"></div>
+        <div style="font-size:.7rem;color:var(--gold)">✦</div>
+        <div style="flex:1;height:1px;background:var(--gold)"></div>
+      </div>
+
+      <!-- Description -->
+      <div style="font-size:.88rem;color:var(--parch2);line-height:1.75;margin-bottom:1rem;font-style:italic">
+        "${LANG==='en'
+          ? 'I have dined at every three-starred restaurant in Europe. I know what I want before the waiter arrives. And I have absolutely no patience.'
+          : 'He cenado en todos los restaurantes con tres estrellas de Europa. Sé lo que quiero antes de que llegue el camarero. Y no tengo ninguna paciencia.'}"
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex;gap:.5rem;margin-bottom:1.5rem">
+        <div style="flex:1;background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .4rem;text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold)">5</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--parch4);text-transform:uppercase;letter-spacing:.08em;margin-top:.15rem">${LANG==='en'?'chances':'intentos'}</div>
+        </div>
+        <div style="flex:1;background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .4rem;text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold)">⏱</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--parch4);text-transform:uppercase;letter-spacing:.08em;margin-top:.15rem">${LANG==='en'?'limited time':'tiempo límite'}</div>
+        </div>
+        <div style="flex:1;background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);padding:.6rem .4rem;text-align:center">
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold)">😤</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--parch4);text-transform:uppercase;letter-spacing:.08em;margin-top:.15rem">${LANG==='en'?'no mercy':'sin piedad'}</div>
+        </div>
+      </div>
+
+      <!-- Warning box -->
+      <div style="background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:1.5rem;font-size:.78rem;color:var(--parch2);line-height:1.6">
+        ⚠️ ${LANG==='en'
+          ? 'Don Augusto loses patience with every wrong answer. Fail too many times and he <strong style="color:var(--rose)">calls the manager</strong>.'
+          : 'Don Augusto pierde la paciencia con cada respuesta incorrecta. Falla demasiado y <strong style="color:var(--rose)">llama al manager</strong>.'}
+      </div>
+
+      <!-- CTA -->
+      <button onclick="txStart(true)" class="btn-primary" style="width:100%;padding:1rem;font-size:.95rem;letter-spacing:.05em;margin-bottom:.6rem">
+        ${LANG==='en'?'Begin service →':'Comenzar servicio →'}
+      </button>
+      <button onclick="renderTxoko()" style="background:transparent;border:none;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch4);cursor:pointer;padding:.4rem;letter-spacing:.08em">
+        ${LANG==='en'?'← back':'← volver'}
+      </button>
+
+    </div>
+  </div>`;
 }
 
 function txNext(){
@@ -5282,6 +5364,8 @@ function txTick(){
     fill.style.background=pct>50?'#3d7a54':pct>25?'#e8a020':'#a84040';
   }
   if(lbl) lbl.textContent=Math.ceil(txokoState.patienceLeft)+'s';
+  const faceEl=document.getElementById('txokoClientFace');
+  if(faceEl){ const pctFace=txokoState.patienceLeft/txokoState.patienceMax*100; faceEl.innerHTML=txClientFace(txokoState.lives,pctFace); }
   if(txokoState.patienceLeft<=0){ clearInterval(txokoTimer); txAnswer(-1); }
 }
 
@@ -5322,7 +5406,10 @@ function txAnswer(idx){
     fb.textContent=msg;
     fb.className='txoko-feedback show '+(ok?'ok':'ko');
   }
-  if(livesEl) livesEl.textContent='😠'.repeat(3-txokoState.lives)+'😊'.repeat(txokoState.lives);
+  if(livesEl){
+    const pctNow=txokoState.patienceLeft/txokoState.patienceMax*100;
+    livesEl.innerHTML=txClientFace(txokoState.lives,pctNow);
+  }
   if(streakEl) streakEl.textContent=txokoState.streak>1?('🔥 '+(LANG==='en'?'Streak':'Racha')+' x'+txokoState.streak):'';
 
   // Save record + bonus XP
@@ -5338,6 +5425,201 @@ function txAnswer(idx){
 }
 
 // ── Render: game screen ─────────────────────────────
+
+function txClientFace(lives, pct){
+  let mood;
+  if(lives>=5) mood=0;
+  else if(lives===4) mood=1;
+  else if(lives===3) mood=2;
+  else if(lives===2) mood=3;
+  else mood=4;
+
+  // ── 0: Don Augusto — plácido, copa en mano ─────────────────────────────
+  const f0 = `<svg viewBox="0 0 72 72" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+    <!-- cabeza redonda, mejillas rosadas -->
+    <ellipse cx="36" cy="38" rx="26" ry="28" fill="#f5dfc0"/>
+    <ellipse cx="22" cy="44" rx="7" ry="4" fill="#f0a0a0" opacity=".35"/>
+    <ellipse cx="50" cy="44" rx="7" ry="4" fill="#f0a0a0" opacity=".35"/>
+    <!-- pelo escaso y blanco ondulado -->
+    <path d="M12,28 Q10,14 24,10 Q36,6 48,10 Q62,14 60,28" fill="#e8e0d8" stroke="#c8c0b0" stroke-width="1"/>
+    <ellipse cx="36" cy="10" rx="13" ry="5" fill="#e8e0d8"/>
+    <!-- ojos satisfechos semicerrados -->
+    <path d="M24,32 Q28,28 32,32" stroke="#3a2010" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M40,32 Q44,28 48,32" stroke="#3a2010" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- cejas arqueadas serenas -->
+    <path d="M22,27 Q28,24 33,26" stroke="#7a5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M39,26 Q44,24 50,27" stroke="#7a5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <!-- nariz bulbosa -->
+    <ellipse cx="36" cy="40" rx="5" ry="3.5" fill="#e8c090"/>
+    <circle cx="33.5" cy="41" r="1.5" fill="#d0a070"/>
+    <circle cx="38.5" cy="41" r="1.5" fill="#d0a070"/>
+    <!-- sonrisa satisfecha -->
+    <path d="M26,52 Q36,60 46,52" stroke="#b06040" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- bigote de caballero -->
+    <path d="M28,47 Q33,50 36,48 Q39,50 44,47" stroke="#6a4020" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- copita de vino -->
+    <g transform="translate(54,28)">
+      <path d="M4,0 Q8,8 6,12 L2,12 Q0,8 4,0Z" fill="#c04060" opacity=".8"/>
+      <line x1="4" y1="12" x2="4" y2="18" stroke="#8a6040" stroke-width="1.5"/>
+      <line x1="1" y1="18" x2="7" y2="18" stroke="#8a6040" stroke-width="1.5"/>
+    </g>
+  </svg>`;
+
+  // ── 1: Don Augusto — levanta una ceja ──────────────────────────────────
+  const f1 = `<svg viewBox="0 0 72 72" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="36" cy="38" rx="26" ry="28" fill="#f5dfc0"/>
+    <ellipse cx="22" cy="44" rx="7" ry="4" fill="#f0a0a0" opacity=".3"/>
+    <ellipse cx="50" cy="44" rx="7" ry="4" fill="#f0a0a0" opacity=".3"/>
+    <path d="M12,28 Q10,14 24,10 Q36,6 48,10 Q62,14 60,28" fill="#e8e0d8" stroke="#c8c0b0" stroke-width="1"/>
+    <ellipse cx="36" cy="10" rx="13" ry="5" fill="#e8e0d8"/>
+    <!-- ojo izquierdo normal, ojo derecho abierto de sospecha -->
+    <path d="M24,33 Q28,29 32,33" stroke="#3a2010" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="44" cy="32" rx="5" ry="5.5" fill="white" stroke="#3a2010" stroke-width="1.2"/>
+    <circle cx="44" cy="33" r="3" fill="#3a2010"/>
+    <circle cx="45" cy="31.5" r="1" fill="white"/>
+    <!-- ceja izquierda normal, ceja derecha muy arriba -->
+    <path d="M22,28 Q28,25 33,27" stroke="#7a5030" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M39,24 Q44,20 50,24" stroke="#7a5030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="36" cy="40" rx="5" ry="3.5" fill="#e8c090"/>
+    <circle cx="33.5" cy="41" r="1.5" fill="#d0a070"/>
+    <circle cx="38.5" cy="41" r="1.5" fill="#d0a070"/>
+    <!-- boca recta con comisura caída un lado -->
+    <path d="M27,52 Q36,54 45,52" stroke="#b06040" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M45,52 Q47,54 46,56" stroke="#b06040" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M28,47 Q33,50 36,48 Q39,50 44,47" stroke="#6a4020" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- signo interrogación flotando -->
+    <text x="56" y="22" font-size="14" fill="#8a6040" opacity=".7" font-family="serif">?</text>
+  </svg>`;
+
+  // ── 2: Don Augusto — ceño profundo, copa vacía ─────────────────────────
+  const f2 = `<svg viewBox="0 0 72 72" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="36" cy="38" rx="26" ry="28" fill="#f0d0a8"/>
+    <ellipse cx="20" cy="46" rx="8" ry="5" fill="#e09080" opacity=".3"/>
+    <ellipse cx="52" cy="46" rx="8" ry="5" fill="#e09080" opacity=".3"/>
+    <path d="M12,28 Q10,14 24,10 Q36,6 48,10 Q62,14 60,28" fill="#e0d8d0" stroke="#b8b0a0" stroke-width="1"/>
+    <ellipse cx="36" cy="10" rx="13" ry="5" fill="#e0d8d0"/>
+    <!-- ojos entornados -->
+    <ellipse cx="28" cy="33" rx="5.5" ry="4" fill="white" stroke="#2a1808" stroke-width="1"/>
+    <ellipse cx="44" cy="33" rx="5.5" ry="4" fill="white" stroke="#2a1808" stroke-width="1"/>
+    <circle cx="29" cy="34" r="3" fill="#2a1808"/>
+    <circle cx="45" cy="34" r="3" fill="#2a1808"/>
+    <circle cx="30" cy="33" r="1" fill="white"/>
+    <circle cx="46" cy="33" r="1" fill="white"/>
+    <!-- cejas en V pronunciada -->
+    <path d="M20,27 Q28,31 34,29" stroke="#3a1808" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M38,29 Q44,31 52,27" stroke="#3a1808" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <!-- pliegue entre cejas -->
+    <line x1="35" y1="27" x2="36" y2="31" stroke="#3a1808" stroke-width="1.2" opacity=".6"/>
+    <line x1="37" y1="27" x2="36" y2="31" stroke="#3a1808" stroke-width="1.2" opacity=".6"/>
+    <ellipse cx="36" cy="41" rx="5" ry="3.5" fill="#d8b080"/>
+    <circle cx="33.5" cy="42" r="1.5" fill="#c09060"/>
+    <circle cx="38.5" cy="42" r="1.5" fill="#c09060"/>
+    <!-- boca fruncida, labios apretados -->
+    <path d="M28,53 Q36,49 44,53" stroke="#904030" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M28,47 Q33,50 36,48 Q39,50 44,47" stroke="#5a3015" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- copa vacía boca abajo -->
+    <g transform="translate(53,26) rotate(180,4,8)">
+      <path d="M4,0 Q8,8 6,12 L2,12 Q0,8 4,0Z" fill="#c0c0c0" opacity=".5"/>
+      <line x1="4" y1="12" x2="4" y2="18" stroke="#8a6040" stroke-width="1.5"/>
+      <line x1="1" y1="18" x2="7" y2="18" stroke="#8a6040" stroke-width="1.5"/>
+    </g>
+    <!-- gotita cayendo de la copa -->
+    <ellipse cx="55" cy="44" rx="2" ry="3" fill="#c04060" opacity=".5"/>
+  </svg>`;
+
+  // ── 3: Don Augusto — furioso, pelo de punta ────────────────────────────
+  const f3 = `<svg viewBox="0 0 72 72" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="36" cy="39" rx="26" ry="27" fill="#e8b888"/>
+    <!-- mejillas muy rojas -->
+    <ellipse cx="18" cy="46" rx="9" ry="6" fill="#d04020" opacity=".4"/>
+    <ellipse cx="54" cy="46" rx="9" ry="6" fill="#d04020" opacity=".4"/>
+    <!-- pelo de punta electrizado -->
+    <path d="M14,26 Q12,16 20,10 L22,18 Q28,8 32,6 L31,16 Q36,4 40,6 L39,16 Q44,8 48,10 L46,18 Q54,12 58,20 L56,26" fill="#d8d0c8" stroke="#b0a898" stroke-width="1"/>
+    <!-- ojos inyectados, muy abiertos -->
+    <ellipse cx="27" cy="34" rx="6" ry="6" fill="white"/>
+    <ellipse cx="45" cy="34" rx="6" ry="6" fill="white"/>
+    <!-- venitas rojas -->
+    <line x1="22" y1="34" x2="25" y2="35" stroke="#c02020" stroke-width=".8" opacity=".7"/>
+    <line x1="22" y1="36" x2="25" y2="36" stroke="#c02020" stroke-width=".8" opacity=".5"/>
+    <line x1="48" y1="34" x2="51" y2="35" stroke="#c02020" stroke-width=".8" opacity=".7"/>
+    <circle cx="28" cy="35" r="3.8" fill="#1a0800"/>
+    <circle cx="46" cy="35" r="3.8" fill="#1a0800"/>
+    <circle cx="29" cy="33.5" r="1.2" fill="white"/>
+    <circle cx="47" cy="33.5" r="1.2" fill="white"/>
+    <!-- cejas en V agudas, muy bajas -->
+    <path d="M18,27 L33,34" stroke="#0a0000" stroke-width="3" stroke-linecap="round"/>
+    <path d="M39,34 L54,27" stroke="#0a0000" stroke-width="3" stroke-linecap="round"/>
+    <ellipse cx="36" cy="42" rx="5" ry="3" fill="#d09060"/>
+    <circle cx="33.5" cy="43" r="1.3" fill="#b07040"/>
+    <circle cx="38.5" cy="43" r="1.3" fill="#b07040"/>
+    <!-- boca abierta, dientes apretados -->
+    <path d="M24,54 Q36,47 48,54" stroke="#801808" stroke-width="2" fill="#b05030" stroke-linecap="round"/>
+    <rect x="27" y="50" width="5" height="4" rx="1" fill="#f0e8df"/>
+    <rect x="33" y="49" width="6" height="4.5" rx="1" fill="#f0e8df"/>
+    <rect x="40" y="49" width="6" height="4.5" rx="1" fill="#f0e8df"/>
+    <rect x="47" y="50" width="5" height="4" rx="1" fill="#f0e8df"/>
+    <!-- vena en sien -->
+    <path d="M16,32 Q14,28 18,24 Q22,20 18,16" stroke="#c02020" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".7"/>
+    <!-- chaqueta con corbata torcida -->
+    <path d="M28,47 Q33,50 36,48 Q39,50 44,47" stroke="#4a2010" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- símbolo enfado -->
+    <text x="57" y="18" font-size="12" fill="#c02020" opacity=".9" font-family="sans-serif">!</text>
+    <text x="61" y="26" font-size="10" fill="#c02020" opacity=".7" font-family="sans-serif">!</text>
+  </svg>`;
+
+  // ── 4: Don Augusto — explosión total, llama al manager ─────────────────
+  const f4 = `<svg viewBox="0 0 72 72" width="60" height="60" xmlns="http://www.w3.org/2000/svg">
+    <!-- Halo de furia rojo anaranjado -->
+    <ellipse cx="36" cy="38" rx="33" ry="33" fill="#ff4010" opacity=".12"/>
+    <ellipse cx="36" cy="38" rx="29" ry="29" fill="#ff6020" opacity=".1"/>
+    <ellipse cx="36" cy="39" rx="25" ry="26" fill="#e09060"/>
+    <!-- rojo total en cara -->
+    <ellipse cx="36" cy="39" rx="24" ry="25" fill="#d06030" opacity=".5"/>
+    <ellipse cx="16" cy="46" rx="11" ry="7" fill="#c01808" opacity=".5"/>
+    <ellipse cx="56" cy="46" rx="11" ry="7" fill="#c01808" opacity=".5"/>
+    <!-- pelo totalmente erizado y caótico -->
+    <path d="M13,24 L10,10 L18,20 L16,6 L24,18 L22,4 L30,16 L30,4 L36,14 L42,4 L42,16 L50,4 L48,18 L56,6 L54,20 L62,10 L59,24" fill="#c8c0b8" stroke="#a8a098" stroke-width=".8"/>
+    <!-- ojos desorbitados con espirales de locura -->
+    <circle cx="26" cy="33" r="7" fill="white" stroke="#800000" stroke-width="1.5"/>
+    <circle cx="46" cy="33" r="7" fill="white" stroke="#800000" stroke-width="1.5"/>
+    <!-- espirales -->
+    <path d="M26,33 Q28,30 30,33 Q28,36 24,33 Q22,28 28,26 Q34,24 34,32 Q34,38 26,38" stroke="#800000" stroke-width="1" fill="none" opacity=".6"/>
+    <path d="M46,33 Q48,30 50,33 Q48,36 44,33 Q42,28 48,26 Q54,24 54,32 Q54,38 46,38" stroke="#800000" stroke-width="1" fill="none" opacity=".6"/>
+    <circle cx="27" cy="33" r="2" fill="#0a0000"/>
+    <circle cx="47" cy="33" r="2" fill="#0a0000"/>
+    <!-- cejas a tope en V -->
+    <path d="M16,24 L30,33" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M42,33 L56,24" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- boca abierta gritando al máximo -->
+    <ellipse cx="36" cy="54" rx="14" ry="10" fill="#5a0808"/>
+    <ellipse cx="36" cy="51" rx="13" ry="7" fill="#8a1010"/>
+    <!-- dientes -->
+    <rect x="25" y="47" width="5" height="5" rx="1" fill="#f8f0e8"/>
+    <rect x="31" y="46" width="5" height="5.5" rx="1" fill="#f8f0e8"/>
+    <rect x="37" y="46" width="5" height="5.5" rx="1" fill="#f8f0e8"/>
+    <rect x="43" y="47" width="5" height="5" rx="1" fill="#f8f0e8"/>
+    <!-- lengua -->
+    <ellipse cx="36" cy="58" rx="8" ry="5" fill="#c02828"/>
+    <!-- vapor por las orejas -->
+    <path d="M8,34 Q4,28 8,22 Q12,16 8,10" stroke="#ff6020" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".8"/>
+    <path d="M4,36 Q0,30 4,24 Q8,18 4,12" stroke="#ff4010" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".5"/>
+    <path d="M64,34 Q68,28 64,22 Q60,16 64,10" stroke="#ff6020" stroke-width="2.5" fill="none" stroke-linecap="round" opacity=".8"/>
+    <path d="M68,36 Q72,30 68,24 Q64,18 68,12" stroke="#ff4010" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".5"/>
+    <!-- venas prominentes en frente -->
+    <path d="M28,18 Q30,22 32,18 Q34,15 36,18 Q38,22 40,18" stroke="#900000" stroke-width="1.8" fill="none" opacity=".8"/>
+    <!-- signos de explosión -->
+    <text x="54" y="16" font-size="15" fill="#ff4010" font-family="sans-serif" font-weight="bold">!!</text>
+    <text x="4" y="20" font-size="13" fill="#ff4010" font-family="sans-serif" font-weight="bold">!!</text>
+    <!-- cartel manager -->
+    <g transform="translate(44,2)">
+      <rect x="0" y="0" width="26" height="12" rx="3" fill="#fff8e8" stroke="#c9a84c" stroke-width="1"/>
+      <text x="13" y="9" font-size="6" fill="#8a4010" text-anchor="middle" font-family="sans-serif" font-weight="bold">MANAGER</text>
+    </g>
+  </svg>`;
+
+  return [f0,f1,f2,f3,f4][mood];
+}
+
 function txRender(){
   const {question:q,lives,streak,score,patienceLeft,patienceMax}=txokoState;
   const lvl=txLevel(score);
@@ -5347,9 +5629,9 @@ function txRender(){
 
   document.getElementById('appContent').innerHTML=`
     <div class="txoko-game">
-      <div class="txoko-hud">
-        <span class="txoko-lives" id="txokoLives">${"😠".repeat(3-lives)+"😊".repeat(lives)}</span>
-        <span class="txoko-streak" id="txokoStreak">${streak>1?('🔥 '+(LANG==='en'?'Streak':'Racha')+' x'+streak):''}</span>
+      <div class="txoko-hud" style="display:flex;align-items:center;gap:.5rem">
+        <span id="txokoClientFace" style="display:flex;align-items:center;transition:all .3s">${txClientFace(lives,pct)}</span>
+        <span class="txoko-streak" id="txokoStreak" style="flex:1">${streak>1?('🔥 '+(LANG==='en'?'Streak':'Racha')+' x'+streak):''}</span>
         <span class="txoko-score-hud">${score} <span class="txoko-diff ${lvl.cls}">${txLevelName(lvl)}</span></span>
       </div>
       <div class="txoko-patience-wrap">
@@ -5394,7 +5676,7 @@ function txGameOver(){
   document.getElementById('appContent').innerHTML=`
     <div class="txoko-wrap">
       <div class="txoko-gameover">
-        <div class="txoko-gameover-icon">${isRecord?'🏆':'😬'}</div>
+        <div class="txoko-gameover-icon" style="font-size:unset">${isRecord?'🏆':txClientFace(1,0)}</div>
         <div class="txoko-gameover-title">${isRecord?(LANG==='en'?'New record!':'¡Nuevo récord!'):(LANG==='en'?'Service over':'Servicio terminado')}</div>
         <div class="txoko-gameover-sub">${LANG==='en'?'The waiter closes the notepad...':'El camarero cierra el cuaderno...'}</div>
         <div class="txoko-gameover-stats">
@@ -5403,8 +5685,8 @@ function txGameOver(){
           <div class="txoko-stat-card"><div class="txoko-stat-num">${timeStr}</div><div class="txoko-stat-lbl">Tiempo</div></div>
           <div class="txoko-stat-card"><div class="txoko-stat-num"><span class="txoko-diff ${lvl.cls}">${lvl.name}</span></div><div class="txoko-stat-lbl">Nivel alcanzado</div></div>
         </div>
-        <button class="btn-primary" onclick="txStart()" style="width:100%;margin-bottom:.75rem">${LANG==='en'?'Try again →':'Volver a intentarlo →'}</button>
-        <button class="btn-secondary" onclick="renderTxoko()" style="width:100%">${LANG==='en'?'Main menu':'Menú principal'}</button>
+        <button class="btn-primary" onclick="txStart(true)" style="width:100%;margin-bottom:.75rem">${LANG==='en'?'Try again →':'Volver a intentarlo →'}</button>
+        <button onclick="renderTxoko()" style="width:100%;padding:.85rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.88rem;font-weight:500;color:var(--parch2);cursor:pointer;letter-spacing:.04em">${LANG==='en'?'← Main menu':'← Menú principal'}</button>
       </div>
     </div>`;
 }
