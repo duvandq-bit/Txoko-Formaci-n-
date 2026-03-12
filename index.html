@@ -2140,7 +2140,7 @@ function renderLiveQuizHost(empNames){
       <div id="liveQuizProgress" style="margin-bottom:1rem"></div>
       <div style="display:flex;gap:.5rem">
         <button onclick="advanceLiveQuiz('${code}',${JSON.stringify(questions).replace(/'/g,"\'")})" id="liveNextBtn" class="btn-primary" style="flex:1">▶ Iniciar quiz</button>
-        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" class="btn-secondary">✕ Terminar</button>
+        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" style="padding:.75rem 1.1rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer;letter-spacing:.03em">Terminar</button>
       </div>`;
 
     // Poll for participants
@@ -2177,8 +2177,55 @@ async function advanceLiveQuiz(code, questions){
   if(liveCurrentQ >= questions.length){
     await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
     stopLiveQuiz();
-    alert('¡Quiz terminado! Revisa los resultados en la pantalla.');
+    // Show results summary for host
+    const finalSess = await supaGetLiveSession(code);
+    const finalAnswers = JSON.parse(finalSess?.answers||'{}');
+    const participants = [...new Set(Object.values(finalAnswers).flatMap(q=>Object.keys(q)))];
+    const scores = {};
+    participants.forEach(p => { scores[p] = 0; });
+    questions.forEach((q,i) => {
+      Object.entries(finalAnswers[i]||{}).forEach(([p,a]) => { if(a===q.correct) scores[p]++; });
+    });
+    const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    const medals = ['🥇','🥈','🥉'];
+    const c = document.getElementById('appContent');
+    c.innerHTML = `<div class="sup-wrap">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">🏁</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--parchment)">Resultados del quiz</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--parch4);margin-top:.25rem">${participants.length} participantes · ${questions.length} preguntas</div>
+      </div>
+      ${sorted.map(([name,score],i)=>{
+        const pct = Math.round(score/questions.length*100);
+        const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+        return `<div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:${i===0?'var(--gold-b)':'#fff'};border:1px solid ${i===0?'var(--gold-a)':'var(--line)'};border-radius:var(--r2);margin-bottom:.4rem">
+          <span style="font-size:1.2rem">${i<3?medals[i]:`${i+1}.`}</span>
+          <div style="flex:1;font-size:.85rem;color:var(--parchment);font-weight:${i===0?'600':'400'}">${name}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;color:${col}">${score}/${questions.length} · ${pct}%</span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Por pregunta</div>
+        ${questions.map((q,i)=>{
+          const qA = finalAnswers[i]||{};
+          const correct = Object.values(qA).filter(a=>a===q.correct).length;
+          const total = Object.values(qA).length;
+          const pct = total?Math.round(correct/total*100):0;
+          const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+          return `<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--line)">
+            <span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch4);width:20px">${i+1}</span>
+            <span style="flex:1;font-size:.78rem;color:var(--parchment)">${q.dish}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:${col}">${correct}/${total}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <button onclick="renderSupDashboard()" class="btn-primary" style="width:100%;margin-top:1rem">Volver al panel</button>
+    </div>`;
     return;
+  }
+  // First question — send push notification to whole team
+  if(liveCurrentQ === 0){
+    await supaCreateNotification('all', `🎯 Quiz en vivo activo — código: ${code} — ¡Únete ahora desde el dashboard!`, 'urgent');
   }
   await supaUpdateLiveSession(code, { state: 'active', current_q: liveCurrentQ });
   liveCurrentQ++;
@@ -2530,9 +2577,27 @@ function startPersonalErrorMode(){
       if(p < weakPct){ weakPct=p; weakTopic=k; }
     }
   }
-  // Use examCorrect to find weak dishes
   const ec = emp.examCorrect||{};
-  const weakDishes = DISHES.filter(d => (ec[d.id]||0) < 3);
+  const sessions = emp.sessions||[];
+
+  // Build dish attempt counts from sessions
+  const dishAttempts = {};
+  sessions.forEach(s => {
+    if(s.dishResults) s.dishResults.forEach(r => {
+      dishAttempts[r.id] = (dishAttempts[r.id]||0) + 1;
+    });
+  });
+
+  // Priority 1: dishes attempted but with low correct rate
+  const attempted = DISHES.filter(d => dishAttempts[d.id] > 0 && (ec[d.id]||0) < dishAttempts[d.id] * 0.6);
+  // Priority 2: dishes with examCorrect < 2 (seen in exam but rarely correct)
+  const lowCorrect = DISHES.filter(d => !dishAttempts[d.id] && (ec[d.id]||0) > 0 && (ec[d.id]||0) < 3);
+  // Priority 3: never seen (only if no better candidates)
+  const neverSeen = DISHES.filter(d => !dishAttempts[d.id] && !(ec[d.id]));
+
+  // Combine with priority order, limit to 20
+  const weakDishes = [...attempted, ...lowCorrect, ...neverSeen].filter((d,i,a)=>a.findIndex(x=>x.id===d.id)===i).slice(0,20);
+
   if(!weakDishes.length){
     const toast=document.createElement('div');
     toast.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;padding:.5rem 1.2rem;border-radius:30px;font-family:Jost,sans-serif;font-size:.82rem;font-weight:600;z-index:9999';
@@ -3246,6 +3311,7 @@ async function supaUpsertEmployee(name) {
         known_dishes: JSON.stringify(emp.knownDishes || {}),
         exam_correct: JSON.stringify(emp.examCorrect || {}),
         sessions_count: (emp.sessions || []).length,
+        sessions_data: JSON.stringify((emp.sessions || []).slice(-20)),
         txoko_record: emp.txokoRecord || 0,
         updated_at: new Date().toISOString()
       })
@@ -3272,6 +3338,7 @@ async function supaRestoreEmployee(name) {
     try { const ts = JSON.parse(r.topic_scores||'{}'); if(Object.keys(ts).length) emp.topicScores = ts; } catch(e){}
     try { const kd = JSON.parse(r.known_dishes||'{}'); if(Object.keys(kd).length) emp.knownDishes = kd; } catch(e){}
     try { const ec = JSON.parse(r.exam_correct||'{}'); if(Object.keys(ec).length) emp.examCorrect = ec; } catch(e){}
+    try { const sd = JSON.parse(r.sessions_data||'[]'); if(sd.length > (emp.sessions||[]).length) emp.sessions = sd; } catch(e){}
     saveDB();
   } catch(e) {}
 }
@@ -3293,7 +3360,7 @@ async function supaFetchAllEmployees() {
       topicScores: (() => { try { return JSON.parse(r.topic_scores||'{}'); } catch(e){ return {}; } })(),
       knownDishes: (() => { try { return JSON.parse(r.known_dishes||'{}'); } catch(e){ return {}; } })(),
       examCorrect: (() => { try { return JSON.parse(r.exam_correct||'{}'); } catch(e){ return {}; } })(),
-      sessions: Array(r.sessions_count || 0).fill({}),
+      sessions: (() => { try { const sd=JSON.parse(r.sessions_data||'[]'); return sd.length ? sd : Array(r.sessions_count||0).fill({}); } catch(e){ return Array(r.sessions_count||0).fill({}); } })(),
       txokoRecord: r.txoko_record || 0
     }));
   } catch(e) { return null; }
@@ -4077,14 +4144,52 @@ function closePinAndEnter(){
   if(_supBtn) _supBtn.style.display=currentUser==='Duvan'?'':'none';
   // Restore from Supabase first, then show dashboard, then sync back
   supaRestoreEmployee(currentUser).then(() => {
-    showTab('dashboard');
-    checkStreak();
     const emp = getEmp(currentUser);
+    const isNew = !emp.xp && !(emp.sessions||[]).length && !Object.keys(emp.knownDishes||{}).length;
+    if(isNew){
+      showOnboarding();
+    } else {
+      showTab('dashboard');
+      checkStreak();
+    }
     if(emp.xp && emp.xp > 0) supaUpsertEmployee(currentUser);
-    // Notifications
     requestNotifPermission();
     checkAndShowNotifications(currentUser);
   });
+}
+
+function showOnboarding(){
+  const c = document.getElementById('appContent');
+  document.getElementById('screenApp').classList.add('active');
+  const steps = [
+    { icon:'🃏', title:'Flashcards', desc:'Empieza aquí. Repasa cada plato — nombre, alérgenos, marcaje e ingredientes. Márcalos como dominados cuando los tengas seguros.', action: ()=>{ closeOnboarding(); showTab('flashcards'); } },
+    { icon:'📝', title:'Exámenes', desc:'Pon a prueba lo que has aprendido. Cuantos más exámenes hagas, más XP ganas y más subes de nivel.', action: ()=>{ closeOnboarding(); showTab('exam'); } },
+    { icon:'🎯', title:'Puntos débiles', desc:'La app detecta automáticamente dónde fallas más y te propone repasos personalizados.', action: ()=>{ closeOnboarding(); startPersonalErrorMode(); } },
+  ];
+  let step = 0;
+  function renderStep(){
+    const s = steps[step];
+    c.innerHTML = `<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem;text-align:center;animation:fadeIn .4s ease">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch4);letter-spacing:.15em;text-transform:uppercase;margin-bottom:2rem">${step+1} / ${steps.length}</div>
+      <div style="font-size:4rem;margin-bottom:1rem">${s.icon}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.75rem;color:var(--parchment);margin-bottom:.75rem">${s.title}</div>
+      <div style="font-size:.88rem;color:var(--parch2);line-height:1.7;max-width:300px;margin-bottom:2.5rem">${s.desc}</div>
+      <button onclick="window._onboardingAction()" style="background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--ink);border:none;border-radius:30px;padding:.8rem 2rem;font-family:'Jost',sans-serif;font-weight:600;font-size:.9rem;cursor:pointer;margin-bottom:1rem;letter-spacing:.04em">
+        ${step < steps.length-1 ? 'Empezar con ' + s.title + ' →' : '🚀 ¡Empezar!'}
+      </button>
+      ${step < steps.length-1 ? `<button onclick="window._onboardingSkip()" style="background:transparent;border:none;font-family:'Jost',sans-serif;font-size:.78rem;color:var(--parch4);cursor:pointer;padding:.5rem">Saltar intro</button>` : ''}
+      <div style="display:flex;gap:.4rem;margin-top:1.5rem">
+        ${steps.map((_,i)=>`<div style="width:6px;height:6px;border-radius:50%;background:${i===step?'var(--gold)':'var(--ink3)'}"></div>`).join('')}
+      </div>
+    </div>`;
+    window._onboardingAction = s.action;
+    window._onboardingSkip = ()=>{ closeOnboarding(); showTab('dashboard'); checkStreak(); };
+  }
+  renderStep();
+}
+
+function closeOnboarding(){
+  checkStreak();
 }
 
 function pinCancel(){
@@ -4674,7 +4779,7 @@ function renderLiveQuizHost(empNames){
       <div id="liveQuizProgress" style="margin-bottom:1rem"></div>
       <div style="display:flex;gap:.5rem">
         <button onclick="advanceLiveQuiz('${code}',${JSON.stringify(questions).replace(/'/g,"\'")})" id="liveNextBtn" class="btn-primary" style="flex:1">▶ Iniciar quiz</button>
-        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" class="btn-secondary">✕ Terminar</button>
+        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" style="padding:.75rem 1.1rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer;letter-spacing:.03em">Terminar</button>
       </div>`;
 
     // Poll for participants
@@ -4711,8 +4816,55 @@ async function advanceLiveQuiz(code, questions){
   if(liveCurrentQ >= questions.length){
     await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
     stopLiveQuiz();
-    alert('¡Quiz terminado! Revisa los resultados en la pantalla.');
+    // Show results summary for host
+    const finalSess = await supaGetLiveSession(code);
+    const finalAnswers = JSON.parse(finalSess?.answers||'{}');
+    const participants = [...new Set(Object.values(finalAnswers).flatMap(q=>Object.keys(q)))];
+    const scores = {};
+    participants.forEach(p => { scores[p] = 0; });
+    questions.forEach((q,i) => {
+      Object.entries(finalAnswers[i]||{}).forEach(([p,a]) => { if(a===q.correct) scores[p]++; });
+    });
+    const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    const medals = ['🥇','🥈','🥉'];
+    const c = document.getElementById('appContent');
+    c.innerHTML = `<div class="sup-wrap">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">🏁</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--parchment)">Resultados del quiz</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--parch4);margin-top:.25rem">${participants.length} participantes · ${questions.length} preguntas</div>
+      </div>
+      ${sorted.map(([name,score],i)=>{
+        const pct = Math.round(score/questions.length*100);
+        const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+        return `<div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:${i===0?'var(--gold-b)':'#fff'};border:1px solid ${i===0?'var(--gold-a)':'var(--line)'};border-radius:var(--r2);margin-bottom:.4rem">
+          <span style="font-size:1.2rem">${i<3?medals[i]:`${i+1}.`}</span>
+          <div style="flex:1;font-size:.85rem;color:var(--parchment);font-weight:${i===0?'600':'400'}">${name}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;color:${col}">${score}/${questions.length} · ${pct}%</span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Por pregunta</div>
+        ${questions.map((q,i)=>{
+          const qA = finalAnswers[i]||{};
+          const correct = Object.values(qA).filter(a=>a===q.correct).length;
+          const total = Object.values(qA).length;
+          const pct = total?Math.round(correct/total*100):0;
+          const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+          return `<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--line)">
+            <span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch4);width:20px">${i+1}</span>
+            <span style="flex:1;font-size:.78rem;color:var(--parchment)">${q.dish}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:${col}">${correct}/${total}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <button onclick="renderSupDashboard()" class="btn-primary" style="width:100%;margin-top:1rem">Volver al panel</button>
+    </div>`;
     return;
+  }
+  // First question — send push notification to whole team
+  if(liveCurrentQ === 0){
+    await supaCreateNotification('all', `🎯 Quiz en vivo activo — código: ${code} — ¡Únete ahora desde el dashboard!`, 'urgent');
   }
   await supaUpdateLiveSession(code, { state: 'active', current_q: liveCurrentQ });
   liveCurrentQ++;
@@ -5064,9 +5216,27 @@ function startPersonalErrorMode(){
       if(p < weakPct){ weakPct=p; weakTopic=k; }
     }
   }
-  // Use examCorrect to find weak dishes
   const ec = emp.examCorrect||{};
-  const weakDishes = DISHES.filter(d => (ec[d.id]||0) < 3);
+  const sessions = emp.sessions||[];
+
+  // Build dish attempt counts from sessions
+  const dishAttempts = {};
+  sessions.forEach(s => {
+    if(s.dishResults) s.dishResults.forEach(r => {
+      dishAttempts[r.id] = (dishAttempts[r.id]||0) + 1;
+    });
+  });
+
+  // Priority 1: dishes attempted but with low correct rate
+  const attempted = DISHES.filter(d => dishAttempts[d.id] > 0 && (ec[d.id]||0) < dishAttempts[d.id] * 0.6);
+  // Priority 2: dishes with examCorrect < 2 (seen in exam but rarely correct)
+  const lowCorrect = DISHES.filter(d => !dishAttempts[d.id] && (ec[d.id]||0) > 0 && (ec[d.id]||0) < 3);
+  // Priority 3: never seen (only if no better candidates)
+  const neverSeen = DISHES.filter(d => !dishAttempts[d.id] && !(ec[d.id]));
+
+  // Combine with priority order, limit to 20
+  const weakDishes = [...attempted, ...lowCorrect, ...neverSeen].filter((d,i,a)=>a.findIndex(x=>x.id===d.id)===i).slice(0,20);
+
   if(!weakDishes.length){
     const toast=document.createElement('div');
     toast.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;padding:.5rem 1.2rem;border-radius:30px;font-family:Jost,sans-serif;font-size:.82rem;font-weight:600;z-index:9999';
@@ -6540,7 +6710,7 @@ function renderLiveQuizHost(empNames){
       <div id="liveQuizProgress" style="margin-bottom:1rem"></div>
       <div style="display:flex;gap:.5rem">
         <button onclick="advanceLiveQuiz('${code}',${JSON.stringify(questions).replace(/'/g,"\'")})" id="liveNextBtn" class="btn-primary" style="flex:1">▶ Iniciar quiz</button>
-        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" class="btn-secondary">✕ Terminar</button>
+        <button onclick="stopLiveQuiz();supaUpdateLiveSession('${code}',{state:'ended'});renderSupDashboard();" style="padding:.75rem 1.1rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer;letter-spacing:.03em">Terminar</button>
       </div>`;
 
     // Poll for participants
@@ -6577,8 +6747,55 @@ async function advanceLiveQuiz(code, questions){
   if(liveCurrentQ >= questions.length){
     await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
     stopLiveQuiz();
-    alert('¡Quiz terminado! Revisa los resultados en la pantalla.');
+    // Show results summary for host
+    const finalSess = await supaGetLiveSession(code);
+    const finalAnswers = JSON.parse(finalSess?.answers||'{}');
+    const participants = [...new Set(Object.values(finalAnswers).flatMap(q=>Object.keys(q)))];
+    const scores = {};
+    participants.forEach(p => { scores[p] = 0; });
+    questions.forEach((q,i) => {
+      Object.entries(finalAnswers[i]||{}).forEach(([p,a]) => { if(a===q.correct) scores[p]++; });
+    });
+    const sorted = Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    const medals = ['🥇','🥈','🥉'];
+    const c = document.getElementById('appContent');
+    c.innerHTML = `<div class="sup-wrap">
+      <div style="text-align:center;margin-bottom:1.5rem">
+        <div style="font-size:2.5rem;margin-bottom:.5rem">🏁</div>
+        <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--parchment)">Resultados del quiz</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.62rem;color:var(--parch4);margin-top:.25rem">${participants.length} participantes · ${questions.length} preguntas</div>
+      </div>
+      ${sorted.map(([name,score],i)=>{
+        const pct = Math.round(score/questions.length*100);
+        const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+        return `<div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:${i===0?'var(--gold-b)':'#fff'};border:1px solid ${i===0?'var(--gold-a)':'var(--line)'};border-radius:var(--r2);margin-bottom:.4rem">
+          <span style="font-size:1.2rem">${i<3?medals[i]:`${i+1}.`}</span>
+          <div style="flex:1;font-size:.85rem;color:var(--parchment);font-weight:${i===0?'600':'400'}">${name}</div>
+          <span style="font-family:'DM Mono',monospace;font-size:.78rem;font-weight:600;color:${col}">${score}/${questions.length} · ${pct}%</span>
+        </div>`;
+      }).join('')}
+      <div style="margin-top:1rem">
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Por pregunta</div>
+        ${questions.map((q,i)=>{
+          const qA = finalAnswers[i]||{};
+          const correct = Object.values(qA).filter(a=>a===q.correct).length;
+          const total = Object.values(qA).length;
+          const pct = total?Math.round(correct/total*100):0;
+          const col = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+          return `<div style="display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid var(--line)">
+            <span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch4);width:20px">${i+1}</span>
+            <span style="flex:1;font-size:.78rem;color:var(--parchment)">${q.dish}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:.65rem;color:${col}">${correct}/${total}</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <button onclick="renderSupDashboard()" class="btn-primary" style="width:100%;margin-top:1rem">Volver al panel</button>
+    </div>`;
     return;
+  }
+  // First question — send push notification to whole team
+  if(liveCurrentQ === 0){
+    await supaCreateNotification('all', `🎯 Quiz en vivo activo — código: ${code} — ¡Únete ahora desde el dashboard!`, 'urgent');
   }
   await supaUpdateLiveSession(code, { state: 'active', current_q: liveCurrentQ });
   liveCurrentQ++;
@@ -6930,9 +7147,27 @@ function startPersonalErrorMode(){
       if(p < weakPct){ weakPct=p; weakTopic=k; }
     }
   }
-  // Use examCorrect to find weak dishes
   const ec = emp.examCorrect||{};
-  const weakDishes = DISHES.filter(d => (ec[d.id]||0) < 3);
+  const sessions = emp.sessions||[];
+
+  // Build dish attempt counts from sessions
+  const dishAttempts = {};
+  sessions.forEach(s => {
+    if(s.dishResults) s.dishResults.forEach(r => {
+      dishAttempts[r.id] = (dishAttempts[r.id]||0) + 1;
+    });
+  });
+
+  // Priority 1: dishes attempted but with low correct rate
+  const attempted = DISHES.filter(d => dishAttempts[d.id] > 0 && (ec[d.id]||0) < dishAttempts[d.id] * 0.6);
+  // Priority 2: dishes with examCorrect < 2 (seen in exam but rarely correct)
+  const lowCorrect = DISHES.filter(d => !dishAttempts[d.id] && (ec[d.id]||0) > 0 && (ec[d.id]||0) < 3);
+  // Priority 3: never seen (only if no better candidates)
+  const neverSeen = DISHES.filter(d => !dishAttempts[d.id] && !(ec[d.id]));
+
+  // Combine with priority order, limit to 20
+  const weakDishes = [...attempted, ...lowCorrect, ...neverSeen].filter((d,i,a)=>a.findIndex(x=>x.id===d.id)===i).slice(0,20);
+
   if(!weakDishes.length){
     const toast=document.createElement('div');
     toast.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sage);color:#fff;padding:.5rem 1.2rem;border-radius:30px;font-family:Jost,sans-serif;font-size:.82rem;font-weight:600;z-index:9999';
