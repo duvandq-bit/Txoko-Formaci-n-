@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<html lang="es" id="htmlRoot">
+<html lang="es" id="htmlRoot" style="background:#0e0c09;color:#f2eae0">
 <head>
 <meta charset="UTF-8">
+<style>
+  /* Critical — prevent white flash */
+  html,body{background:#0e0c09 !important}
+  #screenLogin{background:#0e0c09}
+</style>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>TXOKO · Formación</title>
 <meta name="description" content="Formación del equipo de sala — TXOKO by Martín Berasategui">
-<meta name="theme-color" content="#130e08">
+<meta name="theme-color" content="#0e0c09">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -47,9 +53,10 @@
   --shadow2: 0 8px 40px rgba(0,0,0,.15), 0 2px 8px rgba(0,0,0,.08);
   --shadow3: 0 20px 60px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.1);
 }
-html{font-size:16px;scroll-behavior:smooth}
+html{font-size:16px;scroll-behavior:smooth;background:#0e0c09}
 body{
-  background:var(--ink);
+  background:#0e0c09;
+  transition:background .3s ease;
   color:var(--parchment);
   font-family:'Jost',sans-serif;
   font-weight:400;
@@ -78,103 +85,130 @@ body::before{
   flex-direction:column;align-items:center;justify-content:center;
   padding:2rem;gap:0;
   background:
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(154,115,64,.10) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(154,115,64,.07) 0%, transparent 55%),
-    radial-gradient(ellipse 30% 25% at 10% 60%, rgba(154,115,64,.04) 0%, transparent 50%);
+    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(200,169,110,.13) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(200,169,110,.07) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 35% at 10% 70%, rgba(200,169,110,.05) 0%, transparent 50%),
+    linear-gradient(160deg,#0e0c09 0%,#16120d 50%,#0e0c09 100%);
+  overflow:hidden;
+}
+/* Grain texture overlay */
+#screenLogin::before{
+  content:'';position:absolute;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;opacity:.4;
+}
+/* Horizontal light bar */
+#screenLogin::after{
+  content:'';position:absolute;top:38%;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(200,169,110,.12) 30%,rgba(200,169,110,.22) 50%,rgba(200,169,110,.12) 70%,transparent 100%);
+  pointer-events:none;
 }
 
-/* Decorative horizontal rules flanking the logo */
+@keyframes loginFadeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes logoGlow{0%,100%{text-shadow:0 0 40px rgba(200,169,110,.15),0 0 80px rgba(200,169,110,.05)}50%{text-shadow:0 0 60px rgba(200,169,110,.28),0 0 120px rgba(200,169,110,.1)}}
+@keyframes lineExpand{from{width:0;opacity:0}to{width:100%;opacity:1}}
+
 .login-eyebrow{
-  display:flex;align-items:center;gap:1.2rem;margin-bottom:.6rem;width:100%;max-width:400px;justify-content:center;
+  display:flex;align-items:center;gap:1.2rem;margin-bottom:1.4rem;
+  width:100%;max-width:380px;justify-content:center;
+  animation:loginFadeIn .6s ease both;
 }
 .login-eyebrow::before,.login-eyebrow::after{
   content:'';flex:1;height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold),transparent);
-  opacity:.45;
+  background:linear-gradient(90deg,transparent,rgba(200,169,110,.55),transparent);
 }
 .login-eyebrow span{
-  font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.22em;
-  text-transform:uppercase;color:var(--gold);opacity:.7;white-space:nowrap;
+  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.25em;
+  text-transform:uppercase;color:rgba(200,169,110,.75);white-space:nowrap;
 }
 
-.login-logo{text-align:center;margin-bottom:2.8rem}
+.login-logo{
+  text-align:center;margin-bottom:.5rem;
+  animation:loginFadeIn .7s .1s ease both;
+}
 .login-logo h1{
-  font-family:'Playfair Display',serif;font-size:3.6rem;font-weight:400;
-  letter-spacing:.18em;color:var(--gold);text-transform:uppercase;
-  line-height:1;text-shadow:0 0 60px rgba(200,169,110,.2);
+  font-family:'Playfair Display',serif;font-size:4.5rem;font-weight:400;
+  letter-spacing:.22em;color:#c8a96e;text-transform:uppercase;
+  line-height:1;animation:logoGlow 4s ease-in-out infinite;
+}
+.login-logo-line{
+  width:0;height:1px;margin:.6rem auto .5rem;
+  background:linear-gradient(90deg,transparent,#c8a96e,transparent);
+  animation:lineExpand .8s .4s cubic-bezier(.4,0,.2,1) forwards;
 }
 .login-logo em{
   display:block;font-family:'Jost',sans-serif;font-style:normal;
-  font-size:.72rem;letter-spacing:.28em;color:var(--parch3);
-  text-transform:uppercase;margin-top:.6rem;font-weight:300;
+  font-size:.65rem;letter-spacing:.32em;color:rgba(200,169,110,.8);
+  text-transform:uppercase;margin-top:.4rem;font-weight:300;
 }
 
 .login-card{
-  background:#ffffff;
-  border:1px solid var(--line2);
+  background:rgba(30,25,18,.7);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(200,169,110,.22);
   border-radius:var(--r);
-  padding:2rem 2rem 1.75rem;
-  width:100%;max-width:400px;
-  box-shadow:var(--shadow3);
+  padding:1.75rem 1.75rem 1.5rem;
+  width:100%;max-width:380px;
+  box-shadow:0 32px 64px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.03);
   position:relative;overflow:hidden;
+  animation:loginFadeIn .7s .25s ease both;
 }
-/* top accent line */
 .login-card::before{
-  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold),transparent);
-  opacity:.5;
+  content:'';position:absolute;top:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(200,169,110,.5),transparent);
 }
 
 .login-section-label{
-  font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--gold);margin-bottom:.9rem;
-  opacity:.8;
+  font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.2em;
+  text-transform:uppercase;color:rgba(200,169,110,.75);margin-bottom:.85rem;
 }
 
 .login-employees{
-  display:flex;flex-direction:column;gap:.45rem;
-  margin-bottom:1.5rem;max-height:260px;overflow-y:auto;
-  scrollbar-width:thin;scrollbar-color:var(--gold-a) transparent;
+  display:flex;flex-direction:column;gap:.4rem;
+  margin-bottom:1.25rem;max-height:240px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(200,169,110,.2) transparent;
 }
 
 .employee-btn{
-  display:flex;align-items:center;gap:.9rem;
-  background:#ffffff;
-  border:1px solid var(--line);border-radius:var(--r2);
-  padding:.75rem 1rem;cursor:pointer;
-  transition:all .22s cubic-bezier(.4,0,.2,1);text-align:left;width:100%;
+  display:flex;align-items:center;gap:.85rem;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(200,169,110,.18);border-radius:var(--r2);
+  padding:.7rem .9rem;cursor:pointer;
+  transition:all .2s cubic-bezier(.4,0,.2,1);text-align:left;width:100%;
 }
 .employee-btn:hover{
-  border-color:var(--gold-a);
-  background:var(--gold-b);
+  border-color:rgba(200,169,110,.3);
+  background:rgba(200,169,110,.06);
   transform:translateX(3px);
 }
 .employee-btn .avatar{
-  width:34px;height:34px;border-radius:50%;
-  background:linear-gradient(135deg,var(--ink3),var(--ink4));
-  border:1px solid var(--gold-a);
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(200,169,110,.1);
+  border:1px solid rgba(200,169,110,.25);
   display:flex;align-items:center;justify-content:center;
-  font-family:'Playfair Display',serif;font-size:.95rem;
-  color:var(--gold);flex-shrink:0;
+  font-family:'Playfair Display',serif;font-size:.9rem;
+  color:#c8a96e;flex-shrink:0;
 }
-.employee-btn .emp-name{font-size:.85rem;font-weight:500;color:var(--parchment);letter-spacing:.01em}
-.employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);margin-top:.1rem}
+.employee-btn .emp-name{font-size:.85rem;font-weight:500;color:#f2eae0;letter-spacing:.01em}
+.employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(200,169,110,.65);margin-top:.1rem}
 
 .login-sep{
-  display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;
+  display:flex;align-items:center;gap:.75rem;margin-bottom:1.1rem;
 }
-.login-sep::before,.login-sep::after{content:'';flex:1;height:1px;background:var(--line)}
-.login-sep span{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--parch4)}
+.login-sep::before,.login-sep::after{content:'';flex:1;height:1px;background:rgba(200,169,110,.2)}
+.login-sep span{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.7)}
 
 .new-emp-row{display:flex;gap:.5rem}
 .new-emp-input{
-  flex:1;background:#ffffff;border:1px solid var(--line);
-  border-radius:var(--r2);padding:.65rem 1rem;color:var(--parchment);
+  flex:1;background:rgba(30,25,18,.7);
+  border:1px solid rgba(200,169,110,.15);
+  border-radius:var(--r2);padding:.65rem 1rem;
+  color:#f2eae0;
   font-family:'Jost',sans-serif;font-size:.85rem;outline:none;
   transition:border-color .2s;
 }
 .new-emp-input:focus{border-color:var(--gold-a);background:#fff}
-.new-emp-input::placeholder{color:var(--parch4)}
+.new-emp-input::placeholder{color:rgba(200,169,110,.45)}
 
 .btn-primary{
   background:linear-gradient(135deg,var(--gold),var(--gold2));
@@ -810,14 +844,11 @@ body::before{
 /* ─────────────────────────────────────────────────
    LANGUAGE TOGGLE
 ───────────────────────────────────────────────── */
-.login-lang-toggle{
-  display:flex;gap:.5rem;justify-content:center;margin-bottom:1.5rem;
-  animation:slideUp .4s .15s ease both;
-}
+.login-lang-toggle{display:flex;gap:.5rem;margin-bottom:1.6rem;animation:loginFadeIn .7s .15s ease both}
 .lang-btn{
-  padding:.45rem 1.1rem;border-radius:2rem;border:1.5px solid var(--ink4);
+  padding:.45rem 1.1rem;border-radius:2rem;border:1.5px solid rgba(200,169,110,.2);
   background:transparent;font-family:'Jost',sans-serif;font-size:.78rem;
-  font-weight:500;color:var(--parch2);cursor:pointer;
+  font-weight:500;color:rgba(200,169,110,.8);cursor:pointer;
   transition:all .2s ease;letter-spacing:.03em;
 }
 .lang-btn.active{
@@ -862,7 +893,7 @@ body::before{
   display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem;
 }
 .pin-key{
-  aspect-ratio:1;border-radius:.7rem;border:1.5px solid var(--ink4);
+  aspect-ratio:1;border-radius:.7rem;border:1.5px solid rgba(200,169,110,.2);
   background:#fff;font-family:'Jost',sans-serif;font-size:1.1rem;
   font-weight:500;color:var(--parchment);cursor:pointer;
   transition:all .12s ease;display:flex;align-items:center;justify-content:center;
@@ -945,24 +976,8 @@ body::before{
 /* ─────────────────────────────────────────────────
    LEGAL NOTICE
 ───────────────────────────────────────────────── */
-.legal-notice{
-  width:100%;max-width:400px;
-  margin-top:.6rem;margin-bottom:.2rem;
-  padding:.85rem 1rem;
-  background:rgba(26,23,20,.03);
-  border:1px solid var(--ink4);
-  border-radius:.6rem;
-  text-align:center;
-  animation:slideUp .4s .2s ease both;
-}
-.legal-notice p{
-  font-family:'DM Mono',monospace;
-  font-size:.52rem;
-  line-height:1.7;
-  color:var(--parch4);
-  letter-spacing:.02em;
-  margin:0;
-}
+.legal-notice{max-width:380px;margin-top:1.8rem;text-align:center;animation:loginFadeIn .7s .4s ease both}
+.legal-notice p{font-family:'DM Mono',monospace;font-size:.55rem;color:rgba(200,169,110,.65);line-height:1.7;margin-bottom:.4rem;letter-spacing:.02em}
 .legal-notice p + p{
   margin-top:.4rem;
   padding-top:.4rem;
@@ -1376,13 +1391,14 @@ body::before{
 .sound-toggle:hover{border-color:var(--gold-a);transform:scale(1.1);}
 </style>
 </head>
-<body>
+<body style="background:#0e0c09">
 
 <!-- ═══════ LOGIN ═══════ -->
-<div id="screenLogin" class="screen active">
+<div id="screenLogin" class="screen active" style="background:#0e0c09">
   <div class="login-eyebrow"><span>Ritz-Carlton Abama · Tenerife</span></div>
   <div class="login-logo">
     <h1>TXOKO</h1>
+    <div class="login-logo-line"></div>
     <em id="loginSubtitle">by Martín Berasategui · Formación de Equipo</em>
   </div>
   <div class="login-lang-toggle" id="langToggle">
@@ -1398,7 +1414,6 @@ body::before{
   <path d="M11 0 V16 M0 8 H22" stroke="#C8102E" stroke-width="3"/>
 </svg> English</button>
   </div>
-  <div class="leaderboard" id="leaderboard"></div>
   <div class="login-card">
     <div class="login-section-label" id="loginProfileLabel">Tu perfil</div>
     <div class="login-employees" id="employeeList"></div>
@@ -1894,19 +1909,19 @@ const CASOS_PRACTICOS = [
   },
 
   { id:'c8', section:'comandas', color:'#c8a96e', icon:'📝',
-    situation: 'La mesa está identificada como VIP. ¿Qué es lo primero que haces al recibirles?',
-    situation_en: 'The table is identified as VIP. What is the first thing you do when receiving them?',
-    correct: 'Pido inmediatamente el aperitivo VIP correspondiente para adultos o niños, sin esperar a que lo soliciten.',
-    correct_en: 'I immediately request the corresponding VIP welcome drink for adults or children, without waiting for them to ask.',
+    situation: 'Llega una mesa VIP. ¿Cuál es el orden correcto de actuación?',
+    situation_en: 'A VIP table arrives. What is the correct order of action?',
+    correct: 'Aplico el Paso 1 (bienvenida cordial con nombre), confirmo las alergias con la información de la Hostess y solicito inmediatamente el aperitivo VIP para adultos o niños.',
+    correct_en: 'I apply Step 1 (warm greeting by name), confirm allergies with the Hostess information and immediately request the VIP welcome drink for adults or children.',
     traps: [
-      'Saludo al huésped y ofrezco el aperitivo VIP una vez estén sentados y cómodos.',
-      'Notifico al manager que ha llegado la mesa VIP y espero que él gestione el aperitivo.',
-      'Pregunto al huésped si desea el aperitivo de bienvenida antes de pedirlo.'
+      'Aplico el Paso 1, solicito el aperitivo VIP inmediatamente y confirmo alergias al tomar la comanda.',
+      'Confirmo alergias en mesa con el propio huésped y luego solicito el aperitivo VIP.',
+      'Solicito el aperitivo VIP en cuanto llegan y confirmo alergias mientras lo preparan.'
     ],
     traps_en: [
-      'Greet the guest and offer the VIP aperitif once they are seated and comfortable.',
-      'Notify the manager the VIP table has arrived and wait for them to handle the aperitif.',
-      'Ask the guest if they would like the welcome drink before ordering it.'
+      'Apply Step 1, request the VIP aperitif immediately and confirm allergies when taking the order.',
+      'Confirm allergies at the table with the guest themselves and then request the VIP aperitif.',
+      'Request the VIP aperitif as soon as they arrive and confirm allergies while it is being prepared.'
     ]
   },
 
@@ -2168,17 +2183,17 @@ const CASOS_PRACTICOS = [
   { id:'c24', section:'servicio', color:'#7095c8', icon:'🤵',
     situation: 'Un cliente termina su entrante muy rápido y cocina aún no tiene el principal listo. ¿Qué haces?',
     situation_en: 'A guest finishes their starter very quickly and the kitchen does not have the main ready. What do you do?',
-    correct: 'Informo al cliente que el plato estará en breve y ofrezco más pan mientras espera. Comunico a cocina la situación.',
-    correct_en: 'I inform the guest the dish will be ready shortly and offer more bread while they wait. I let the kitchen know.',
+    correct: 'Marcho el siguiente plato desde Infrasys, limpio la mesa, marco el siguiente plato, informo al cliente que el plato estará en breve y ofrezco bebidas o pregunto si desea más pan.',
+    correct_en: 'I fire the next dish from Infrasys, clear the table, set for the next course, inform the guest the dish will be ready shortly and offer drinks or ask if they would like more bread.',
     traps: [
-      'Retiro el plato vacío y aviso a cocina para que prioricen esta mesa.',
-      'Retiro el plato vacío e informo al cliente sin ofrecer nada mientras espera.',
-      'Ofrezco más pan al cliente y espero a que cocina saque el plato sin avisar.'
+      'Retiro el plato vacío y marco la mesa — marcho el plato desde Infrasys cuando cocina avise.',,
+      'Informo al cliente y ofrezco más pan, esperando a que cocina saque el plato por su propio ritmo.',
+      'Marco desde Infrasys y retiro el plato vacío pero no marco la mesa ni informo al cliente.'
     ],
     traps_en: [
-      'Remove the empty plate and inform the kitchen to prioritise this table.',
-      'Remove the empty plate and inform the guest without offering anything while they wait.',
-      'Offer more bread to the guest and wait for the kitchen to bring the dish without informing them.'
+      'Remove the empty plate, offer more bread and inform the guest — I fire the dish when the kitchen is ready.',
+      'Inform the guest and offer more bread, waiting for the kitchen to bring the dish at their own pace.',
+      'Fire the next dish to the kitchen and remove the empty plate without telling the guest about the wait.'
     ]
   },
 
@@ -2801,10 +2816,10 @@ function getDish(d) {
 //  DATA
 // ═══════════════════════════════════════════════════
 const DISHES = [
-  {id:1,cat:'Entrantes',name:'Croquetas Premium',allergens:['Huevos','Gluten','Lácteos','Crustáceos','Pescado','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Leche, Harina, Mantequilla, Nata, Gelatina, Huevo. Jamón: loncha de jamón. Txipiron: tartar de txipiron. Langostino: americana y tartar de langostino. Dry Age: mermelada de piparra, tartar de Dry y piparra. Boletus: manzana confitada. Pollo: cogollo de lechuga, aderezo césar, lámina de pollo con Demi-glace y crujiente de bacon.',history:'Nacidas del ingenio y el amor por no desperdiciar, las croquetas viajaron desde Francia hasta el alma de España. En cada casa, una receta; en cada bocado, un recuerdo. Crujientes por fuera, suaves por dentro, son el abrazo dorado de la cocina casera, el sabor de la abuela que nunca se olvida. Nuestras croquetas son premium por el Topping que lleva cada una para culminar.',notes:'Todos los sabores llevan en la masa: Huevos, Lácteos y Gluten. Alérgenos adicionales por sabor: · Jamón → Sulfitos integrados en la masa — NO se puede retirar. Si alergia a sulfitos elegir otro sabor. · Langostino → Crustáceos y Apio en el tartar — Comandar SIN TARTAR DE LANGOSTINO o elegir otro sabor. · Dry Age → Sulfitos en el tartar — Comandar SIN TARTAR DRY AGE o elegir otro sabor. · Pollo → Pescado y Mostaza en la salsa césar — Comandar SIN SALSA CÉSAR. · Txipiron → Moluscos integrados en la masa — NO se puede retirar. Si alergia a moluscos elegir otro sabor.'},
+  {id:1,cat:'Entrantes',name:'Croquetas Premium',allergens:['Huevos','Gluten','Lácteos','Crustáceos','Apio','Pescado','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Leche, Harina, Mantequilla, Nata, Gelatina, Huevo. Jamón: loncha de jamón. Txipiron: tartar de txipiron. Langostino: americana y tartar de langostino. Dry Age: mermelada de piparra, tartar de Dry y piparra. Boletus: manzana confitada. Pollo: cogollo de lechuga, aderezo césar, lámina de pollo con Demi-glace y crujiente de bacon.',history:'Nacidas del ingenio y el amor por no desperdiciar, las croquetas viajaron desde Francia hasta el alma de España. En cada casa, una receta; en cada bocado, un recuerdo. Crujientes por fuera, suaves por dentro, son el abrazo dorado de la cocina casera, el sabor de la abuela que nunca se olvida. Nuestras croquetas son premium por el Topping que lleva cada una para culminar.',notes:'Todos los sabores llevan en la masa: Huevos, Lácteos y Gluten. Alérgenos adicionales por sabor: · Jamón → Sulfitos integrados en la masa — NO se puede retirar. Si alergia a sulfitos elegir otro sabor. · Langostino → Crustáceos integrados en la masa — NO se puede retirar. Apio en la salsa americana — Comandar SIN AMERICANA para evitar el Apio. · Dry Age → Sulfitos en el tartar — Comandar SIN TARTAR DRY AGE o elegir otro sabor. · Pollo → Pescado y Mostaza en la salsa césar — Comandar SIN SALSA CÉSAR. · Txipiron → Moluscos integrados en la masa — NO se puede retirar. Si alergia a moluscos elegir otro sabor.'},
   {id:2,cat:'Entrantes',name:'Huevo frito con chistorra',allergens:['Huevos','Lácteos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Papa, Huevo, Nata, Caldo de pollo, Chistorra.',history:'Chistorra de Navarra, uno de los productos de tierra vasca en nuestra carta, acompañada de crema de papa canaria y huevos de caserío, nos dan como resultado un plato redondo en boca por sabor y textura.',notes:'Nuestra versión de los huevos a la estampida: huevo a baja temperatura y frito, espuma de papa, papa paja y chistorra.'},
   {id:3,cat:'Entrantes',name:'Calamares a la Andaluza',allergens:['Moluscos','Gluten','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Calamar, Harina, Levadura, Agua, Cerveza, Sal, Ajo, Limón, Tinta de Txipiron. Alioli cítrico y alioli de tinta de calamar: Huevo, Aceite, Ajo, Limón.',history:'El Atlántico que rodea Tenerife es uno de los caladeros más ricos del mundo. Estos calamares frescos, capturados en las aguas frías que bañan las costas canarias, se visten con una tempura ligera y crujiente inspirada en la tradición andaluza. Ocho años en nuestra carta avalan un bocado que combina el mar de Canarias con la técnica de la cocina del sur.',notes:' 8 años en la carta. Calamares en tempura con alioli cítrico y alioli de tinta de calamar. ⚠ Huevos en el alioli — Comandar SIN ALIOLI.'},
-  {id:4,cat:'Entrantes',name:'Tomates aliñados',allergens:['Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ventresca, Anchoas, Tomates, Cebolla roja, Vinagre de Jerez, Granizado de gazpacho, Granadina, Oporto, Vinagreta de Cabernet Sauvignon.',history:'Elaborada con tomates ecológicos de la localidad de Arico, la anchoa y la ventresca resaltan el sabor clásico de la ensalada mediterránea. El clima de la isla nos aporta todo el año tomates muy sabrosos que combinados con el granizado de gazpacho refrescante lo hacen un plato perfecto para intercalar en los entrantes para compartir.',notes:'⚠ Pescado en la ventresca y las anchoas — Comandar SIN VENTRESCA Y SIN ANCHOAS. Sin pescado los Sulfitos de la vinagreta permanecen.'},
+  {id:4,cat:'Entrantes',name:'Tomates aliñados',allergens:['Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ventresca, Anchoas, Tomates, Cebolla roja, Vinagre de Jerez, Granizado de gazpacho, Granadina, Oporto, Vinagreta de Cabernet Sauvignon.',history:'Elaborada con tomates ecológicos de la localidad de Arico, la anchoa y la ventresca resaltan el sabor clásico de la ensalada mediterránea. El clima de la isla nos aporta todo el año tomates muy sabrosos que combinados con el granizado de gazpacho refrescante lo hacen un plato perfecto para intercalar en los entrantes para compartir.',notes:'⚠ Pescado en la ventresca y las anchoas — Comandar SIN VENTRESCA Y SIN ANCHOAS. Sulfitos en la vinagreta y la cebolla encurtida — NO se pueden retirar, son parte esencial del plato.'},
   {id:5,cat:'Entrantes',name:'Pámpano marinado al mojo rojo',allergens:['Frutos de cáscara','Gluten','Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pámpano, Pimiento palmero, Pimiento rojo, Ajo, Huevas de salmón, Huevas de Tobiko, Aguacate, Tabasco, Pan de algas, Naranja confitada, Cilantro, Chips de kale.',history:'Pescado azul de Canarias, de carne grasa y textura inigualable, marinado 24 horas en sal y sabores intensos como el del mojo rojo. Matices como el picante, el fresco del cilantro y el dulce de la naranja logran un equilibrio perfecto. Un clásico de Txoko.',notes:'★ Clásico de Txoko. Marinado 24h en mojo rojo. Crema de aguacate picante, naranja confitada, pan de algas, huevas de Tobiko y de salmón, chips de kale.'},
   {id:6,cat:'Entrantes',name:'Peras escalivadas con cremoso de queso de cabra',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pera, Espuma de queso de cabra (Nata, Leche, Queso de cabra, Queso azul), Migas de Ibérico (Ibéricos y miga de pan), Vinagreta de mostaza (Aceite de oliva, Vinagre de manzana, Miel, Mostaza Dijon, Mostaza antigua), Almendras, Brotes de mostaza y mézclum.',history:null,notes:'Peras escalivadas en el josper peladas y cortadas en cuartos. Con vinagreta de mostaza, almendras laminadas tostadas, espuma de queso de cabra y migas de ibérico. Terminamos con brotes de mostaza.'},
   {id:7,cat:'Entrantes',name:'Ensalada Niçoise',allergens:['Mostaza','Sulfitos','Pescado','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tataki de atún, Papa, Lechuga, Tomate, Judías, Pimiento asado, Huevo de Codorniz, Salsa de cítricos, Brotes de mostaza, Miel, Yema de huevo.',history:'Inspirados en dos productos canarios, papa negra y atún, reconvertimos la clásica ensalada francesa en un Carpaccio de papa confitada donde los matices cítricos resaltan el resto de ingredientes. Perfecta para compartir.',notes:'Tataki de atún sobre ensalada de papas confitadas, pimientos confitados, tomate, judías verdes, puntos de mayonesa cítrica y mermelada de limón.'},
@@ -2824,11 +2839,11 @@ const DISHES = [
   {id:21,cat:'Platos Principales',name:'Lomo de atún con tomate en texturas',allergens:['Pescado','Sulfitos','Soja','Huevos'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Atún, Sake, Soja, Azúcar, Tomate, Vinagre de jerez, Sal, Dextrosa, Huevo, Gelatinas, Cebolleta, Pepinillo, Vinagreta de cabernet.',history:null,notes:'Lomo de atún marcado al josper y pincelado con teriyaki. Con guarnición de tomates en texturas: Tartar de tomate, Helado de tomate y Espuma de tomate.'},
   {id:22,cat:'Platos Principales',name:'Lubina a la brasa con ensalada de papaya',allergens:['Pescado','Sulfitos'],cutlery:'Tenedor de pescado, Cuchillo de pescado',ingredients:'Zanahoria, Cardamomo, Piel de limón, Batata, Pimienta rosa, Aceite girasol, Calabaza, Vainilla, Vinagre de manzana, Azúcar, Guindilla, Papaya verde, Gajos de pomelo, Huevas de aceite oliva, Hojas de cilantro, Láminas de ají Amarillo.',history:null,notes:'Lubina a la brasa con ensalada de papaya verde, batata, zanahoria y calabaza. Terminamos con gajos de pomelo, huevas de aceite de oliva, hojas de cilantro y láminas de ají amarillo.'},
   {id:23,cat:'Platos Principales',name:'Ravioli de pularda',allergens:['Lácteos','Sulfitos','Gluten','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'1 Pularda, Cebolla, Zanahoria, Puerro, Tomates, Champiñón, Ajo, Coñac, Porto, Lima, Tomillo, Sal y pimienta, Caldo de pollo, Tocineta curada, Boletus, Leche, Mantequilla, Harina, Foie, Huevo.',history:null,notes:'Raviolis rellenos de pularda y boletus, con bechamel de foie.'},
-  {id:24,cat:'Platos Principales',name:'Carrillera de Wagyu',allergens:['Gluten','Lácteos','Mostaza','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ajo, Puerros, Cebolla, Zanahoria, Vino tinto, Caldo de pollo, Espuma de hongo y papas, Nata, Crudité de espárragos.',history:'Plato emblemático de Martín en el menú de Txoko. Hecha de forma tradicional con cocciones largas que nos aportan una textura muy suave en boca, redondeamos este sabor con espuma de hongos que ayuda a neutralizar la intensidad de la carrillera.',notes:' Plato emblemático de Martín. Carrillera de ternera a baja temperatura en cremoso de papa y hongos, espárrago verde crujiente y trufa (si disponible en temporada).'},
+  {id:24,cat:'Platos Principales',name:'Carrillera de Wagyu',allergens:['Lácteos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ajo, Puerros, Cebolla, Zanahoria, Vino tinto, Caldo de pollo, Espuma de hongo y papas, Nata, Crudité de espárragos.',history:'Plato emblemático de Martín en el menú de Txoko. Hecha de forma tradicional con cocciones largas que nos aportan una textura muy suave en boca, redondeamos este sabor con espuma de hongos que ayuda a neutralizar la intensidad de la carrillera.',notes:' Plato emblemático de Martín. Carrillera de ternera a baja temperatura en cremoso de papa y hongos, espárrago verde crujiente y trufa (si disponible en temporada).'},
   {id:25,cat:'Platos Principales',name:'Pluma de cerdo Ibérico',allergens:['Lácteos','Sulfitos','Apio'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Cerdo ibérico, Manzana encurtida, Hinojo encurtido, Puré de apiobola (mantequilla), Vinagre.',history:'Casalba tiene su origen en la sierra de la Demanda. Julio, su dueño, en estrecha relación con nuestros chefs, selecciona las piezas que vienen desde la península a nuestro restaurante. La pluma a la brasa y la presa ibérica destacan por la delicadeza de su sabor suave y textura muy agradable.',notes:'Pluma de cerdo ibérico a la brasa, puré de Apio bola y puntos de crema de zanahoria. Terminada con manzana, zanahoria y remolacha encurtidas.'},
   {id:26,cat:'Platos Principales',name:'Costillas melosas de cordero sobre salsa de curry verde',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Cordero, Cebollas, Puerro, Tomates, Vino tinto, Pimienta y Sal, Demi de jarrete, Vinagre de cabernet, Miel, Azúcar moscovado, Zanahoria, Curry verde, Leche de coco, Caldo de pollo, Naranja, Lima, Limón, Pomelo.',history:null,notes:'⏱ Cocción de 8 horas. Costillas selladas en el josper, envasadas al vacío con marinada. Servidas con demi glace y salsa de curry verde. Terminamos con gajos de cítricos caramelizados.'},
   {id:27,cat:'Guarniciones y Salsas',name:'Ensalada verde',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchara sopera',ingredients:'Lechuga, Cebolla morada. Aderezo: Vinagre, Aceite de oliva, Sal.',history:'Lechuga de nuestro proveedor ecológico de Granadilla de Abona.',notes:'⚠ Sulfitos en el aderezo — Comandar SIN ADEREZO.'},
-  {id:28,cat:'Guarniciones y Salsas',name:'Coliflor frita',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Coliflor.',history:null,notes:'Coliflor blanqueada dos minutos en agua sal, luego frita.'},
+  {id:28,cat:'Guarniciones y Salsas',name:'Coliflor frita',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Coliflor.',history:null,notes:'Coliflor blanqueada dos minutos en agua sal, luego frita.'},
   {id:29,cat:'Guarniciones y Salsas',name:'Alcachofas a la brasa',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Alcachofas nacionales.',history:null,notes:'Corazones de alcachofa confitados en aceite de oliva y luego fritos.'},
   {id:30,cat:'Guarniciones y Salsas',name:'Pimientos del padrón',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pimientos del padrón, Pimienta, Sal.',history:'Nuestros pimientos de Padrón son ecológicos y provenientes de Granadilla.',notes:null},
   {id:32,cat:'Guarniciones y Salsas',name:'Patatas cerilla fritas',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Patatas locales, Aceite, Sal.',history:'Nuestras patatas locales provienen de Tacoronte.',notes:'⚠ Comandar SIN GLUTEN — freidora aparte. Servir siempre salsas para los niños (Mayonesa, Kéchup, etc.).'},
@@ -4076,87 +4091,167 @@ function renderDashboard(){
   const known=Object.values(emp.knownDishes||{}).filter(Boolean).length;
   const fc=(emp.fcHistory||[]).length;
   const topics=emp.topicScores||{};
-  // Canary Islands: UTC+0 (winter) / UTC+1 (summer, last Sun Mar–last Sun Oct)
+  const streak=emp.streak||0;
+  const lvl=getLevelInfo(emp.xp||0);
+
+  // Time-aware greeting — Canary Islands
   const _now=new Date();
-  const _jan=new Date(_now.getFullYear(),0,1);
-  const _jul=new Date(_now.getFullYear(),6,1);
-  const _stdOffset=Math.max(_jan.getTimezoneOffset(),_jul.getTimezoneOffset());
-  const _canaryOffset=_stdOffset===0?0:0; // always UTC±0 base
-  // DST: last Sunday of March to last Sunday of October
   function _lastSun(y,m){const d=new Date(y,m+1,0);d.setDate(d.getDate()-d.getDay());return d;}
-  const _dstStart=_lastSun(_now.getFullYear(),2); // last Sun March
-  const _dstEnd=_lastSun(_now.getFullYear(),9);   // last Sun October
+  const _dstStart=_lastSun(_now.getFullYear(),2);
+  const _dstEnd=_lastSun(_now.getFullYear(),9);
   const _isDST=_now>=_dstStart&&_now<_dstEnd;
-  const _utcH=_now.getUTCHours();
-  const _canaryH=(_utcH+(_isDST?1:0))%24;
+  const _canaryH=(_now.getUTCHours()+(_isDST?1:0))%24;
   const greeting=_canaryH<12?t('greetingMorning'):_canaryH<20?t('greetingAfternoon'):t('greetingEvening');
 
-  const progressRows=TOPICS.map(tp=>{
+  // Contextual motivational message
+  const motivations_es = [
+    'El conocimiento de la carta es tu mejor herramienta de servicio.',
+    'Un buen camarero anticipa. Un gran camarero sorprende.',
+    'Cada plato tiene una historia. Tú eres quien la cuenta.',
+    'La excelencia no es un acto, es un hábito.',
+    'El detalle marca la diferencia entre lo bueno y lo extraordinario.'
+  ];
+  const motivations_en = [
+    'Menu knowledge is your best service tool.',
+    'A good waiter anticipates. A great waiter surprises.',
+    'Every dish has a story. You are the one who tells it.',
+    'Excellence is not an act, it is a habit.',
+    'Attention to detail is the difference between good and extraordinary.'
+  ];
+  const motivations = LANG==='en' ? motivations_en : motivations_es;
+  const motivation = motivations[Math.floor(Date.now()/86400000) % motivations.length];
+
+  // Weak topic detection
+  const topicArr = TOPICS.map(tp => {
     const s=topics[tp.key]||{correct:0,total:0};
     const pct=s.total?Math.round(s.correct/s.total*100):0;
-    const color=pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
-    return `<div class="progress-item">
-      <span class="progress-name">${tp.label}</span>
-      <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${color}"></div></div>
-      <span class="progress-pct">${pct}%</span>
+    return {label:tp.label, pct, key:tp.key};
+  });
+  const weakTopic = topicArr.filter(t=>t.pct>0).sort((a,b)=>a.pct-b.pct)[0];
+  const bestTopic = topicArr.filter(t=>t.pct>0).sort((a,b)=>b.pct-a.pct)[0];
+
+  // Progress rings for topics
+  const topicRings = topicArr.map(tp => {
+    const r=28; const circ=2*Math.PI*r;
+    const offset=circ-(tp.pct/100*circ);
+    const col=tp.pct>=80?'#6bab82':tp.pct>=50?'#c8a96e':'#a84040';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:.3rem">
+      <svg width="68" height="68" viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="${r}" fill="none" stroke="rgba(0,0,0,.06)" stroke-width="5"/>
+        <circle cx="34" cy="34" r="${r}" fill="none" stroke="${col}" stroke-width="5"
+          stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+          stroke-linecap="round" transform="rotate(-90 34 34)"
+          style="transition:stroke-dashoffset .8s ease"/>
+        <text x="34" y="38" text-anchor="middle" font-family="'DM Mono',monospace" font-size="11" fill="var(--parchment)" font-weight="600">${tp.pct}%</text>
+      </svg>
+      <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--parch3);text-align:center;letter-spacing:.04em;text-transform:uppercase;max-width:60px;line-height:1.3">${tp.label}</div>
     </div>`;
   }).join('');
 
   document.getElementById('appContent').innerHTML=`
-    <div class="dash-hero">
-      <div class="dash-hero-greeting">${greeting}, <em>${currentUser}</em></div>
-      <div class="dash-hero-sub">${t('dashSub')} &nbsp;·&nbsp; ${DISHES.length} ${t('dishesOnMenu')}</div>
+
+    <!-- ── HERO ── -->
+    <div style="background:linear-gradient(135deg,#1a1610 0%,#2a1f14 60%,#1a1610 100%);border-radius:var(--r);padding:1.5rem 1.4rem 1.25rem;margin-bottom:1rem;position:relative;overflow:hidden">
+      <!-- Decorative glow -->
+      <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(200,169,110,.12) 0%,transparent 70%);pointer-events:none"></div>
+      <!-- Top row -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.85rem">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.2em;color:rgba(200,169,110,.7);text-transform:uppercase;margin-bottom:.3rem">Ritz-Carlton Abama</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#f2eae0;line-height:1.1">${greeting},</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.4rem;color:#c8a96e;line-height:1.1;font-style:italic">${currentUser}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:rgba(200,169,110,.8);letter-spacing:.08em">Nivel ${lvl.level}</div>
+          <div style="font-family:'Jost',sans-serif;font-size:.72rem;color:#c8a96e;font-weight:500">${lvl.title}</div>
+          ${streak>1?`<div style="font-family:'DM Mono',monospace;font-size:.55rem;color:rgba(200,169,110,.7);margin-top:.1rem">${streak}d seguidos</div>`:''}
+        </div>
+      </div>
+      <!-- XP bar -->
+      ${renderXPBar()}
+      <!-- Motivational quote -->
+      <div style="margin-top:.85rem;padding-top:.75rem;border-top:1px solid rgba(200,169,110,.1)">
+        <div style="font-family:'Jost',sans-serif;font-size:.72rem;color:rgba(200,169,110,.65);font-style:italic;line-height:1.5">"${motivation}"</div>
+      </div>
     </div>
 
-    ${renderXPBar()}
-    <div class="stats-row">
-      <div class="stat-tile"><div class="stat-num">${sessions.length}</div><div class="stat-lbl">${t('statExams')}</div></div>
-      <div class="stat-tile"><div class="stat-num">${avg}<sup>%</sup></div><div class="stat-lbl">${t('statAvg')}</div></div>
-      <div class="stat-tile"><div class="stat-num">${known}</div><div class="stat-lbl">${t('statKnown')}</div></div>
-      <div class="stat-tile"><div class="stat-num">${fc}</div><div class="stat-lbl">${t('statFlashcards')}</div></div>
+    <!-- ── STATS STRIP ── -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:1rem">
+      ${[
+        {num:sessions.length, lbl:LANG==='en'?'Exams':'Exámenes'},
+        {num:(avg||0)+'%', lbl:LANG==='en'?'Average':'Media'},
+        {num:known, lbl:LANG==='en'?'Mastered':'Dominados'},
+        {num:fc, lbl:LANG==='en'?'Cards':'Tarjetas'}
+      ].map(s=>`<div style="background:#fff;border:1px solid var(--line2);border-radius:var(--r2);padding:.6rem .4rem;text-align:center">
+        <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold);line-height:1">${s.num}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem">${s.lbl}</div>
+      </div>`).join('')}
     </div>
+
+    <!-- ── URGENT ALERT (weak topic) ── -->
+    ${weakTopic && weakTopic.pct < 60 ? `
+    <div onclick="showTab('exam')" style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:rgba(168,64,64,.06);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);margin-bottom:1rem;cursor:pointer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a84040" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div style="flex:1">
+        <div style="font-size:.8rem;font-weight:500;color:var(--rose)">${LANG==='en'?'Needs practice':'Necesita práctica'}: ${weakTopic.label}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3)">${weakTopic.pct}% ${LANG==='en'?'accuracy — tap to practice':'precisión — toca para practicar'}</div>
+      </div>
+      <div style="color:rgba(168,64,64,.4);font-size:.9rem">›</div>
+    </div>` : bestTopic && bestTopic.pct >= 80 ? `
+    <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;background:rgba(107,171,130,.06);border:1px solid rgba(107,171,130,.2);border-radius:var(--r2);margin-bottom:1rem">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6bab82" stroke-width="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+      <div>
+        <div style="font-size:.8rem;font-weight:500;color:var(--sage)">${LANG==='en'?'Excellent!':'¡Excelente!'} ${bestTopic.label}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3)">${bestTopic.pct}% ${LANG==='en'?'accuracy':'precisión'}</div>
+      </div>
+    </div>` : ''}
 
     ${renderWeeklyChallenge()}
-    <div class="section-eyebrow" style="animation:slideUp .4s .08s ease both">${t('studyModes')}</div>
-    <div class="modes-grid">
-      <div class="mode-tile" onclick="showTab('flashcards')">
-        <div class="mode-tile-icon">🃏</div>
-        <div class="mode-tile-title">Flashcards</div>
-        <div class="mode-tile-desc">${t('fcDesc')}</div>
-      </div>
-      <div class="mode-tile" onclick="showTab('exam')">
-        <div class="mode-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg></div>
-        <div class="mode-tile-title">${t('navExam')}</div>
-        <div class="mode-tile-desc">${t('examDesc')}</div>
-      </div>
-      <div class="mode-tile" onclick="showTab('repaso')">
-        <div class="mode-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg></div>
-        <div class="mode-tile-title">${t('navRepaso')}</div>
-        <div class="mode-tile-desc">${t('repasoDesc')}</div>
-      </div>
-      <div class="mode-tile" onclick="startPersonalErrorMode()">
-        <div class="mode-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-        <div class="mode-tile-title">${LANG==='en'?'Weak spots':'Mis puntos débiles'}</div>
-        <div class="mode-tile-desc">${LANG==='en'?'Practice the dishes you fail most':'Repasa los platos donde más fallas'}</div>
-      </div>
-      <div class="mode-tile" onclick="showTab('ranking')">
-        <div class="mode-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a2 2 0 000 4c0 2.5 2 4 2 4h12s2-1.5 2-4a2 2 0 000-4h-3"/><path d="M7 4h10v8a5 5 0 01-10 0V4z"/></svg></div>
-        <div class="mode-tile-title">${LANG==='en'?'Team ranking':'Ranking del equipo'}</div>
-        <div class="mode-tile-desc">${LANG==='en'?'See how you compare to your team':'Compara tu progreso con el equipo'}</div>
-      </div>
-      <div class="mode-tile" onclick="renderJoinLiveQuiz()" id="liveQuizTile" style="display:none">
-        <div class="mode-tile-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
-        <div class="mode-tile-title">Quiz en vivo</div>
-        <div class="mode-tile-desc">Únete a la sesión del supervisor</div>
-      </div>
+
+    <!-- ── PRIMARY ACTIONS ── -->
+    <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem;opacity:.7">— ${LANG==='en'?'Study':'Estudiar'} —</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+      <button onclick="showTab('flashcards')" style="display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;padding:1rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r);cursor:pointer;text-align:left;transition:all .2s">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        <div style="font-family:'Jost',sans-serif;font-size:.88rem;font-weight:500;color:var(--parchment)">Flashcards</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch3)">${DISHES.length} ${LANG==='en'?'dishes':'platos'}</div>
+      </button>
+      <button onclick="showTab('exam')" style="display:flex;flex-direction:column;align-items:flex-start;gap:.3rem;padding:1rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r);cursor:pointer;text-align:left;transition:all .2s">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+        <div style="font-family:'Jost',sans-serif;font-size:.88rem;font-weight:500;color:var(--parchment)">${LANG==='en'?'Exam':'Examen'}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch3)">${sessions.length} ${LANG==='en'?'completed':'completados'}</div>
+      </button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:1rem">
+      <button onclick="showTab('repaso')" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:#fff;border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;transition:all .2s">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--parch2)" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+        <div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.06em">${LANG==='en'?'Explore':'Explorar'}</div>
+      </button>
+      <button onclick="startPersonalErrorMode()" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:#fff;border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;transition:all .2s">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--parch2)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.06em">${LANG==='en'?'Weak spots':'Débiles'}</div>
+      </button>
+      <button onclick="showTab('ranking')" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:#fff;border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;transition:all .2s">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--parch2)" stroke-width="1.5"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a2 2 0 000 4c0 2.5 2 4 2 4h12s2-1.5 2-4a2 2 0 000-4h-3"/><path d="M7 4h10v8a5 5 0 01-10 0V4z"/></svg>
+        <div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--parch3);text-transform:uppercase;letter-spacing:.06em">Ranking</div>
+      </button>
     </div>
 
-    <div class="section-eyebrow" style="animation:slideUp .4s .12s ease both">${t('performance')}</div>
-    <div class="progress-panel card" style="padding:1.1rem 1.4rem;animation:slideUp .4s .14s ease both">
-      ${progressRows}
+    <!-- ── PROGRESS RINGS ── -->
+    <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.75rem;opacity:.7">— ${LANG==='en'?'Your progress':'Tu progreso'} —</div>
+    <div style="background:#fff;border:1px solid var(--line2);border-radius:var(--r);padding:1.1rem;display:flex;justify-content:space-around;align-items:flex-start;margin-bottom:1rem">
+      ${topicRings}
+    </div>
+
+    <!-- live quiz tile (hidden by default) -->
+    <div onclick="renderJoinLiveQuiz()" id="liveQuizTile" style="display:none;align-items:center;gap:.75rem;padding:.85rem 1rem;background:var(--gold-b);border:2px solid var(--gold-a);border-radius:var(--r2);margin-bottom:.5rem;cursor:pointer">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      <div>
+        <div style="font-size:.85rem;font-weight:500;color:var(--gold)">Quiz en vivo activo</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3)">Únete a la sesión del supervisor</div>
+      </div>
     </div>
   `;
-  // Check for active live quiz session
   checkActiveLiveSession();
 }
 
@@ -4737,21 +4832,37 @@ function renderRanking(){
   const c = document.getElementById('appContent');
   c.innerHTML = `<div class="sup-wrap">
     <div class="sup-hero">
-      <div class="sup-hero-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:middle"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a2 2 0 000 4c0 2.5 2 4 2 4h12s2-1.5 2-4a2 2 0 000-4h-3"/><path d="M7 4h10v8a5 5 0 01-10 0V4z"/></svg></div>
+      <div class="sup-hero-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4"/><path d="M7 4H4a2 2 0 000 4c0 2.5 2 4 2 4h12s2-1.5 2-4a2 2 0 000-4h-3"/><path d="M7 4h10v8a5 5 0 01-10 0V4z"/></svg></div>
       <div class="sup-hero-title">${LANG==='en'?'Team Ranking':'Ranking del Equipo'}</div>
-      <div class="sup-hero-sub">${LANG==='en'?'Loading...':'Cargando...'}</div>
+      <div class="sup-hero-sub">${LANG==='en'?'All activity · Exams · Tests · Duels':'Toda la actividad · Exámenes · Tests · Duelos'}</div>
     </div>
-    <div id="rankingContent" style="text-align:center;padding:2rem;color:var(--parch3);font-family:'DM Mono',monospace;font-size:.72rem">⏳</div>
+    <div id="rankingContent" style="text-align:center;padding:2rem;color:var(--parch3);font-family:'DM Mono',monospace;font-size:.72rem">—</div>
   </div>`;
 
-  supaFetchAllEmployees().then(remoteEmps => {
+  Promise.all([
+    supaFetchAllEmployees(),
+    supaFetchLeaderboard()
+  ]).then(([remoteEmps, supaScores]) => {
+    // Build unified employee map
     let allEmps = {};
-    // Local first
     Object.keys(DB.employees).forEach(n => { if(n) allEmps[n] = {...DB.employees[n], name: n}; });
-    // Remote wins — always higher XP is source of truth
     if(remoteEmps && remoteEmps.length) remoteEmps.forEach(e => {
       if(!allEmps[e.name] || (e.xp||0) >= (allEmps[e.name].xp||0)) allEmps[e.name] = e;
     });
+
+    // Count activity from Supabase scores per employee
+    const activityMap = {};
+    if(supaScores && supaScores.length) {
+      supaScores.forEach(s => {
+        if(!s.employee) return;
+        if(!activityMap[s.employee]) activityMap[s.employee] = { exams:0, allergen:0, protocol:0, total:0 };
+        const t = s.topic || '';
+        if(t === 'alergenos') activityMap[s.employee].allergen++;
+        else if(t === 'protocolo') activityMap[s.employee].protocol++;
+        else activityMap[s.employee].exams++;
+        activityMap[s.employee].total++;
+      });
+    }
 
     const sorted = Object.values(allEmps)
       .filter(e => e.name)
@@ -4763,30 +4874,40 @@ function renderRanking(){
     }
 
     const medals = [`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#c8a030" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="10" font-family="Playfair Display,serif" fill="#c8a030">I</text></svg>`,`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#9ca3af" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="10" font-family="Playfair Display,serif" fill="#9ca3af">II</text></svg>`,`<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#cd7c32" stroke-width="1.5"/><text x="12" y="16" text-anchor="middle" font-size="10" font-family="Playfair Display,serif" fill="#cd7c32">III</text></svg>`];
+
     const rows = sorted.map((emp, i) => {
       const lvl = getLevelInfo(emp.xp||0);
       const isMe = emp.name === currentUser;
-      const known = Object.values(emp.knownDishes||{}).filter(Boolean).length;
+      const act = activityMap[emp.name] || { exams:0, allergen:0, protocol:0, total:0 };
       const sessions = (emp.sessions||[]).length;
-      return `<div style="display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;background:${isMe?'var(--gold-b)':'#fff'};border:1px solid ${isMe?'var(--gold-a)':'var(--line)'};border-radius:var(--r2);margin-bottom:.45rem;transition:all .2s">
-        <div style="font-size:1.3rem;width:28px;text-align:center;flex-shrink:0">${i<3?medals[i]:`<span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--parch3)">${i+1}</span>`}</div>
-        <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--gold-a)':'var(--ink3)'};border:1px solid var(--gold-a);display:flex;align-items:center;justify-content:center;font-size:${getEmpAvatar(emp.name).length>1||getEmpAvatar(emp.name).charCodeAt(0)>127?'1rem':'.85rem'};color:var(--gold);flex-shrink:0">${getEmpAvatar(emp.name)}</div>
+      const duelWins = (emp.duelWins||0);
+      const streak = (emp.streak||0);
+
+      // Activity summary tags
+      const tags = [];
+      if(sessions > 0) tags.push(`${sessions} exámen${sessions!==1?'es':''}`);
+      if(act.allergen > 0) tags.push(`${act.allergen} alérgeno${act.allergen!==1?'s':''}`);
+      if(act.protocol > 0) tags.push(`${act.protocol} protocolo`);
+      if(duelWins > 0) tags.push(`${duelWins} duelo${duelWins!==1?'s':''}`);
+
+      return `<div style="display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;background:${isMe?'var(--gold-b)':'#fff'};border:1px solid ${isMe?'var(--gold-a)':'var(--line2)'};border-radius:var(--r2);margin-bottom:.45rem">
+        <div style="width:28px;text-align:center;flex-shrink:0">${i<3?medals[i]:`<span style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--parch3)">${i+1}</span>`}</div>
+        <div style="width:34px;height:34px;border-radius:50%;background:${isMe?'var(--gold-a)':'var(--ink3)'};border:1px solid var(--gold-a);display:flex;align-items:center;justify-content:center;font-size:.85rem;color:var(--gold);flex-shrink:0">${getEmpAvatar(emp.name)}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:.85rem;font-weight:500;color:var(--parchment);${isMe?'color:var(--gold)':''}">${emp.name}${isMe?' ← tú':''}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch3)">${lvl.icon} ${lvl.title} · Nv.${lvl.level}</div>
+          <div style="font-size:.88rem;font-weight:500;${isMe?'color:var(--gold)':'color:var(--parchment)'}">${emp.name}${isMe?` <span style="font-size:.6rem;opacity:.6">${LANG==='en'?'← you':'← tú'}</span>`:''}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch3);margin-top:.1rem">${lvl.title} · Nv.${lvl.level}${streak>1?` · ${streak}d`:''}</div>
+          ${tags.length ? `<div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4);margin-top:.15rem">${tags.join(' · ')}</div>` : ''}
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--gold)">${(emp.xp||0).toLocaleString()}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">XP</div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.15rem;color:var(--gold)">${(emp.xp||0).toLocaleString()}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--parch4)">XP</div>
         </div>
       </div>`;
     }).join('');
 
     document.getElementById('rankingContent').innerHTML = `
-      <div style="margin-bottom:1rem">
-        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.75rem;opacity:.8">— ${LANG==='en'?'By XP':'Por XP'} —</div>
-        ${rows}
-      </div>`;
+      <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.75rem;opacity:.8">— ${LANG==='en'?'By total XP':'Por XP total'} —</div>
+      ${rows}`;
   });
 }
 
@@ -5708,7 +5829,23 @@ function buildAllergenQuestions(cat) {
     // Check if notes explicitly say this allergen can be removed (strict check)
     const notesLower = (dish.notes || '').toLowerCase();
     const allergenLower = declaredAllergen.toLowerCase();
-    // Check if allergen is removable — detects both old and new comanda-style notes
+    // Check if allergen is removable
+    // First check if this specific allergen is explicitly marked as NOT removable
+    const allergenSlice = allergenLower.slice(0,5);
+    const enAllergenSlice = enAllergen.toLowerCase().slice(0,5);
+    
+    // Find the sentence/segment mentioning this allergen
+    const noteSegments = notesLower.split(/[·.]/);
+    const relevantSegment = noteSegments.find(seg => 
+      seg.includes(allergenSlice) || seg.includes(enAllergenSlice)
+    ) || '';
+    
+    // If the segment says "no se puede retirar" or "not removable", it's NOT removable
+    const isExplicitlyNotRemovable = relevantSegment.includes('no se puede retirar') || 
+      relevantSegment.includes('not removable') ||
+      relevantSegment.includes('no puede retirarse') ||
+      relevantSegment.includes('cannot be removed');
+    
     const hasComandaNote = notesLower.includes('comandar sin') || notesLower.includes('comandar con pan sin');
     const hasTraditionalNote = (
       notesLower.includes('puede prepararse sin') ||
@@ -5718,13 +5855,10 @@ function buildAllergenQuestions(cat) {
       notesLower.includes('can be served without')
     );
 
-    // For comanda-style notes, check if the allergen is mentioned anywhere in the note
-    // For traditional notes, check allergen first 5 chars
-    const allergenMentioned = hasComandaNote
-      ? (notesLower.includes(allergenLower.slice(0,5)) || notesLower.includes(enAllergen.toLowerCase().slice(0,5)))
-      : notesLower.includes(allergenLower.slice(0,5));
+    const allergenMentioned = notesLower.includes(allergenSlice) || notesLower.includes(enAllergenSlice);
 
-    const isRemovable = dish.notes && (hasComandaNote || hasTraditionalNote) && allergenMentioned;
+    const isRemovable = !isExplicitlyNotRemovable && 
+      dish.notes && (hasComandaNote || hasTraditionalNote) && allergenMentioned;
 
     // Build comanda instruction from note if available
     const comandaMatch = dish.notes && dish.notes.match(/Comandar ([^.]+)\./);
