@@ -1,12 +1,7 @@
 <!DOCTYPE html>
-<html lang="es" id="htmlRoot" style="background:#0e0c09;color:#f2eae0">
+<html lang="es" id="htmlRoot">
 <head>
 <meta charset="UTF-8">
-<style>
-  /* Critical — prevent white flash */
-  html,body{background:#0e0c09 !important}
-  #screenLogin{background:#0e0c09}
-</style>
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>TXOKO · Formación</title>
@@ -53,10 +48,9 @@
   --shadow2: 0 8px 40px rgba(0,0,0,.15), 0 2px 8px rgba(0,0,0,.08);
   --shadow3: 0 20px 60px rgba(0,0,0,.18), 0 4px 12px rgba(0,0,0,.1);
 }
-html{font-size:16px;scroll-behavior:smooth;background:#0e0c09}
+html{font-size:16px;scroll-behavior:smooth}
 body{
-  background:#0e0c09;
-  transition:background .3s ease;
+  background:var(--ink);
   color:var(--parchment);
   font-family:'Jost',sans-serif;
   font-weight:400;
@@ -75,8 +69,9 @@ body::before{
 /* ─────────────────────────────────────────────────
    SCREENS
 ───────────────────────────────────────────────── */
-.screen{display:none;min-height:100vh;position:relative;z-index:1}
+.screen{display:none;min-height:100vh;position:relative;z-index:1;animation:screenIn .35s ease both}
 .screen.active{display:flex}
+@keyframes screenIn{from{opacity:0}to{opacity:1}}
 
 /* ─────────────────────────────────────────────────
    LOGIN
@@ -85,27 +80,130 @@ body::before{
   flex-direction:column;align-items:center;justify-content:center;
   padding:2rem;gap:0;
   background:
-    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(200,169,110,.13) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(200,169,110,.07) 0%, transparent 50%),
-    radial-gradient(ellipse 40% 35% at 10% 70%, rgba(200,169,110,.05) 0%, transparent 50%),
-    linear-gradient(160deg,#0e0c09 0%,#16120d 50%,#0e0c09 100%);
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(154,115,64,.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(154,115,64,.07) 0%, transparent 55%),
+    radial-gradient(ellipse 30% 25% at 10% 60%, rgba(154,115,64,.04) 0%, transparent 50%);
+}
+
+.login-eyebrow{
+  display:flex;align-items:center;gap:1.2rem;margin-bottom:.6rem;width:100%;max-width:400px;justify-content:center;
+}
+.login-eyebrow::before,.login-eyebrow::after{
+  content:'';flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:.45;
+}
+.login-eyebrow span{
+  font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);opacity:.7;white-space:nowrap;
+}
+
+.login-logo{text-align:center;margin-bottom:2.8rem}
+.login-logo h1{
+  font-family:'Playfair Display',serif;font-size:3.6rem;font-weight:400;
+  letter-spacing:.18em;color:var(--gold);text-transform:uppercase;
+  line-height:1;text-shadow:0 0 60px rgba(200,169,110,.2);
+}
+.login-logo-line{
+  width:0;height:1px;margin:.6rem auto .5rem;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  animation:lineExpand .8s .4s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes lineExpand{from{width:0;opacity:0}to{width:100%;opacity:1}}
+.login-logo em{
+  display:block;font-family:'Jost',sans-serif;font-style:normal;
+  font-size:.72rem;letter-spacing:.28em;color:var(--parch3);
+  text-transform:uppercase;margin-top:.6rem;font-weight:300;
+}
+
+.login-card{
+  background:#ffffff;
+  border:1px solid var(--line2);
+  border-radius:var(--r);
+  padding:2rem 2rem 1.75rem;
+  width:100%;max-width:400px;
+  box-shadow:var(--shadow3);
+  position:relative;overflow:hidden;
+}
+.login-card::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:.5;
+}
+
+.login-section-label{
+  font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--gold);margin-bottom:.9rem;
+  opacity:.8;
+}
+
+.login-employees{
+  display:flex;flex-direction:column;gap:.45rem;
+  margin-bottom:1.5rem;max-height:260px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--gold-a) transparent;
+}
+
+.employee-btn{
+  display:flex;align-items:center;gap:.9rem;
+  background:#ffffff;
+  border:1px solid var(--line);border-radius:var(--r2);
+  padding:.75rem 1rem;cursor:pointer;
+  transition:all .22s cubic-bezier(.4,0,.2,1);text-align:left;width:100%;
+}
+.employee-btn:hover{
+  border-color:var(--gold-a);
+  background:var(--gold-b);
+  transform:translateX(3px);
+}
+.employee-btn .avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,var(--ink3),var(--ink4));
+  border:1px solid var(--gold-a);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:.95rem;
+  color:var(--gold);flex-shrink:0;
+}
+.employee-btn .emp-name{font-size:.85rem;font-weight:500;color:var(--parchment);letter-spacing:.01em}
+.employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);margin-top:.1rem}
+
+.login-sep{
+  display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;
+}
+.login-sep::before,.login-sep::after{content:'';flex:1;height:1px;background:var(--line)}
+.login-sep span{font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--parch4)}
+
+.new-emp-row{display:flex;gap:.5rem}
+.new-emp-input{
+  flex:1;background:#ffffff;border:1px solid var(--line);
+  border-radius:var(--r2);padding:.65rem 1rem;color:var(--parchment);
+  font-family:'Jost',sans-serif;font-size:.85rem;outline:none;
+  transition:border-color .2s;
+}
+.screen{display:none;min-height:100vh;position:relative;z-index:1;animation:screenIn .35s ease both}
+.screen.active{display:flex}
+@keyframes screenIn{from{opacity:0}to{opacity:1}}
+
+/* ─────────────────────────────────────────────────
+   LOGIN
+───────────────────────────────────────────────── */
+#screenLogin{
+  flex-direction:column;align-items:center;justify-content:center;
+  padding:2rem;gap:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(154,115,64,.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(154,115,64,.07) 0%, transparent 55%),
+    radial-gradient(ellipse 30% 25% at 10% 60%, rgba(154,115,64,.04) 0%, transparent 50%);
   overflow:hidden;
 }
 /* Grain texture overlay */
 #screenLogin::before{
   content:'';position:absolute;inset:0;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events:none;opacity:.4;
-}
-/* Horizontal light bar */
-#screenLogin::after{
-  content:'';position:absolute;top:38%;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent 0%,rgba(200,169,110,.12) 30%,rgba(200,169,110,.22) 50%,rgba(200,169,110,.12) 70%,transparent 100%);
-  pointer-events:none;
+  pointer-events:none;opacity:.25;
 }
 
-@keyframes loginFadeIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
-@keyframes logoGlow{0%,100%{text-shadow:0 0 40px rgba(200,169,110,.15),0 0 80px rgba(200,169,110,.05)}50%{text-shadow:0 0 60px rgba(200,169,110,.28),0 0 120px rgba(200,169,110,.1)}}
+
+@keyframes loginFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 @keyframes lineExpand{from{width:0;opacity:0}to{width:100%;opacity:1}}
 
 .login-eyebrow{
@@ -119,7 +217,7 @@ body::before{
 }
 .login-eyebrow span{
   font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.25em;
-  text-transform:uppercase;color:rgba(200,169,110,.75);white-space:nowrap;
+  text-transform:uppercase;color:var(--gold);opacity:.7;white-space:nowrap;
 }
 
 .login-logo{
@@ -127,9 +225,9 @@ body::before{
   animation:loginFadeIn .7s .1s ease both;
 }
 .login-logo h1{
-  font-family:'Playfair Display',serif;font-size:4.5rem;font-weight:400;
-  letter-spacing:.22em;color:#c8a96e;text-transform:uppercase;
-  line-height:1;animation:logoGlow 4s ease-in-out infinite;
+  font-family:'Playfair Display',serif;font-size:4rem;font-weight:400;
+  letter-spacing:.18em;color:var(--gold);text-transform:uppercase;
+  line-height:1;text-shadow:0 0 40px rgba(200,169,110,.15);
 }
 .login-logo-line{
   width:0;height:1px;margin:.6rem auto .5rem;
@@ -143,13 +241,13 @@ body::before{
 }
 
 .login-card{
-  background:rgba(30,25,18,.7);
+  background:#ffffff;
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border:1px solid rgba(200,169,110,.22);
   border-radius:var(--r);
   padding:1.75rem 1.75rem 1.5rem;
   width:100%;max-width:380px;
-  box-shadow:0 32px 64px rgba(0,0,0,.4),0 0 0 1px rgba(255,255,255,.03);
+  box-shadow:var(--shadow3);
   position:relative;overflow:hidden;
   animation:loginFadeIn .7s .25s ease both;
 }
@@ -171,8 +269,8 @@ body::before{
 
 .employee-btn{
   display:flex;align-items:center;gap:.85rem;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(200,169,110,.18);border-radius:var(--r2);
+  background:#ffffff;
+  border:1px solid var(--line);border-radius:var(--r2);
   padding:.7rem .9rem;cursor:pointer;
   transition:all .2s cubic-bezier(.4,0,.2,1);text-align:left;width:100%;
 }
@@ -190,25 +288,25 @@ body::before{
   color:#c8a96e;flex-shrink:0;
 }
 .employee-btn .emp-name{font-size:.85rem;font-weight:500;color:#f2eae0;letter-spacing:.01em}
-.employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(200,169,110,.65);margin-top:.1rem}
+.employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch3);margin-top:.1rem}
 
 .login-sep{
   display:flex;align-items:center;gap:.75rem;margin-bottom:1.1rem;
 }
-.login-sep::before,.login-sep::after{content:'';flex:1;height:1px;background:rgba(200,169,110,.2)}
-.login-sep span{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,169,110,.7)}
+.login-sep::before,.login-sep::after{content:'';flex:1;height:1px;background:var(--line)}
+.login-sep span{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.14em;text-transform:uppercase;color:var(--parch3)}
 
 .new-emp-row{display:flex;gap:.5rem}
 .new-emp-input{
-  flex:1;background:rgba(30,25,18,.7);
+  flex:1;background:#ffffff;
   border:1px solid rgba(200,169,110,.15);
   border-radius:var(--r2);padding:.65rem 1rem;
   color:#f2eae0;
   font-family:'Jost',sans-serif;font-size:.85rem;outline:none;
   transition:border-color .2s;
 }
-.new-emp-input:focus{border-color:var(--gold-a);background:#fff}
-.new-emp-input::placeholder{color:rgba(200,169,110,.45)}
+.new-emp-input:focus{border-color:var(--gold-a)}
+.new-emp-input::placeholder{color:var(--parch4)}
 
 .btn-primary{
   background:linear-gradient(135deg,var(--gold),var(--gold2));
@@ -844,12 +942,13 @@ body::before{
 /* ─────────────────────────────────────────────────
    LANGUAGE TOGGLE
 ───────────────────────────────────────────────── */
-.login-lang-toggle{display:flex;gap:.5rem;margin-bottom:1.6rem;animation:loginFadeIn .7s .15s ease both}
+.login-lang-toggle{display:flex;gap:.5rem;margin-bottom:2rem}
 .lang-btn{
-  padding:.45rem 1.1rem;border-radius:2rem;border:1.5px solid rgba(200,169,110,.2);
-  background:transparent;font-family:'Jost',sans-serif;font-size:.78rem;
-  font-weight:500;color:rgba(200,169,110,.8);cursor:pointer;
-  transition:all .2s ease;letter-spacing:.03em;
+  display:flex;align-items:center;gap:.4rem;
+  background:rgba(255,255,255,.06);border:1px solid var(--line2);
+  border-radius:var(--r2);padding:.35rem .75rem;cursor:pointer;
+  font-family:'DM Mono',monospace;font-size:.65rem;letter-spacing:.08em;
+  color:var(--parch2);transition:all .2s;
 }
 .lang-btn.active{
   background:var(--gold);border-color:var(--gold);color:#fff;
@@ -893,7 +992,7 @@ body::before{
   display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1rem;
 }
 .pin-key{
-  aspect-ratio:1;border-radius:.7rem;border:1.5px solid rgba(200,169,110,.2);
+  aspect-ratio:1;border-radius:.7rem;border:1.5px solid var(--ink4);
   background:#fff;font-family:'Jost',sans-serif;font-size:1.1rem;
   font-weight:500;color:var(--parchment);cursor:pointer;
   transition:all .12s ease;display:flex;align-items:center;justify-content:center;
@@ -976,8 +1075,8 @@ body::before{
 /* ─────────────────────────────────────────────────
    LEGAL NOTICE
 ───────────────────────────────────────────────── */
-.legal-notice{max-width:380px;margin-top:1.8rem;text-align:center;animation:loginFadeIn .7s .4s ease both}
-.legal-notice p{font-family:'DM Mono',monospace;font-size:.55rem;color:rgba(200,169,110,.65);line-height:1.7;margin-bottom:.4rem;letter-spacing:.02em}
+.legal-notice{max-width:400px;margin-top:1.5rem;text-align:center}
+.legal-notice p{font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4);line-height:1.7;margin-bottom:.4rem}
 .legal-notice p + p{
   margin-top:.4rem;
   padding-top:.4rem;
@@ -1391,10 +1490,10 @@ body::before{
 .sound-toggle:hover{border-color:var(--gold-a);transform:scale(1.1);}
 </style>
 </head>
-<body style="background:#0e0c09">
+<body>
 
 <!-- ═══════ LOGIN ═══════ -->
-<div id="screenLogin" class="screen active" style="background:#0e0c09">
+<div id="screenLogin" class="screen active">
   <div class="login-eyebrow"><span>Ritz-Carlton Abama · Tenerife</span></div>
   <div class="login-logo">
     <h1>TXOKO</h1>
@@ -4171,7 +4270,7 @@ function renderDashboard(){
       ${renderXPBar()}
       <!-- Motivational quote -->
       <div style="margin-top:.85rem;padding-top:.75rem;border-top:1px solid rgba(200,169,110,.1)">
-        <div style="font-family:'Jost',sans-serif;font-size:.72rem;color:rgba(200,169,110,.65);font-style:italic;line-height:1.5">"${motivation}"</div>
+        <div style="font-family:'Jost',sans-serif;font-size:.72rem;color:var(--parch3);font-style:italic;line-height:1.5">"${motivation}"</div>
       </div>
     </div>
 
