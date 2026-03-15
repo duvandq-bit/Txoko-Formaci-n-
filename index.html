@@ -1420,7 +1420,7 @@ body::before{
     <button class="nav-btn active" id="navDashboard" onclick="showTab('dashboard')">Inicio</button>
     <button class="nav-btn" id="navFlashcards" onclick="showTab('flashcards')">Flashcards</button>
     <button class="nav-btn" id="navExam" onclick="showTab('exam')">Examen</button>
-    <button class="nav-btn" id="navRepaso" onclick="showTab('repaso')">Repaso</button>
+    <button class="nav-btn" id="navRepaso" onclick="showTab('repaso')">Explorar</button>
     <button class="nav-btn" id="navProtocolo" onclick="showTab('protocolo')">📋 Protocolo</button>
     <button class="nav-btn" id="navRanking" onclick="showTab('ranking')">🏆 Ranking</button>
     <button class="nav-btn" id="navTxoko" onclick="showTab('txoko')">🎮 Juegos</button>
@@ -1452,7 +1452,7 @@ const T = {
     navDashboard: 'Inicio',
     navFlashcards: 'Flashcards',
     navExam: 'Examen',
-    navRepaso: 'Repaso',
+    navRepaso: 'Explorar',
     navStats: 'Estadísticas',
     sessions: 'sesiones',
     sessionsMedia: 'media',
@@ -1517,7 +1517,7 @@ const T = {
     noSessions: 'Sin sesiones todavía',
     correct_short: 'correctas',
     noAllergens: 'Sin alérgenos declarados.',
-    noHistory: 'Sin storytelling específico.',
+    noHistory: '✦ Storytelling próximamente',
     examSetupTitle: 'Modo Examen',
     examSetupDesc: 'Responde preguntas de opción múltiple. Tu puntuación y progreso por tema quedan registrados.',
     topicAllergens: 'Alérgenos',
@@ -1614,7 +1614,7 @@ const T = {
     noSessions: 'No sessions yet',
     correct_short: 'correct',
     noAllergens: 'No declared allergens.',
-    noHistory: 'No storytelling available.',
+    noHistory: '✦ Storytelling coming soon',
     examSetupTitle: 'Exam Mode',
     examSetupDesc: 'Answer multiple choice questions. Your score and topic progress are saved.',
     topicAllergens: 'Allergens',
@@ -2087,6 +2087,386 @@ const CASOS_PRACTICOS = [
       'Apologise to the guest and tell them the manager will handle it.'
     ]
   }
+,
+
+  // ── NUEVOS CASOS ──
+
+  // Queja — carne mal hecha
+  { id:'c21', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente dice que su carne está demasiado hecha. ¿Qué haces?',
+    situation_en: 'A guest says their meat is overcooked. What do you do?',
+    correct: 'Me disculpo inmediatamente, retiro el plato y lo comunico a cocina para preparar uno nuevo al punto correcto. No espero a que el cliente insista.',
+    correct_en: 'I apologise immediately, remove the dish and inform the kitchen to prepare a new one to the correct doneness. I do not wait for the guest to insist.',
+    traps: [
+      'Le explico que el punto fue confirmado al tomar la comanda.',
+      'Pregunto al supervisor antes de retirar el plato.',
+      'Ofrezco una guarnición mientras esperan el nuevo plato sin retirar el anterior.'
+    ],
+    traps_en: [
+      'Explain that the doneness was confirmed when taking the order.',
+      'Ask the supervisor before removing the dish.',
+      'Offer a side dish while they wait for the new one without removing the original.'
+    ]
+  },
+
+  // Derramen en mesa
+  { id:'c22', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Sin querer derramas vino sobre la ropa de un cliente. ¿Qué haces?',
+    situation_en: 'You accidentally spill wine on a guest clothing. What do you do?',
+    correct: 'Me disculpo inmediatamente, ofrezco servilletas limpias, aviso al manager y ofrezco gestionar la limpieza de la prenda a través del hotel.',
+    correct_en: 'I apologise immediately, offer clean napkins, notify the manager and offer to arrange cleaning of the garment through the hotel.',
+    traps: [
+      'Me disculpo y continúo el servicio sin avisar al manager.',
+      'Ofrezco servilletas y espero a que el cliente pida más ayuda.',
+      'Aviso al manager pero espero su instrucción antes de disculparme.'
+    ],
+    traps_en: [
+      'Apologise and continue service without notifying the manager.',
+      'Offer napkins and wait for the guest to ask for more help.',
+      'Notify the manager but wait for their instruction before apologising.'
+    ]
+  },
+
+  // Niño en mesa
+  { id:'c23', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Una familia con un niño pequeño se sienta en tu mesa. ¿Qué haces antes de tomar la comanda?',
+    situation_en: 'A family with a young child sits at your table. What do you do before taking the order?',
+    correct: 'Ofrezco una trona si la necesitan, retiro los cubiertos que no correspondan al niño y pregunto si necesitan algo especial para él.',
+    correct_en: 'I offer a highchair if needed, remove cutlery not appropriate for the child and ask if they need anything special for them.',
+    traps: [
+      'Tomo la comanda directamente sin hacer ningún ajuste especial.',
+      'Espero a que los padres pidan lo que necesiten para el niño.',
+      'Solo ofrezco la trona si el niño parece muy pequeño.'
+    ],
+    traps_en: [
+      'Take the order directly without making any special adjustments.',
+      'Wait for the parents to ask for what they need for the child.',
+      'Only offer the highchair if the child appears very young.'
+    ]
+  },
+
+  // Timing entre platos
+  { id:'c24', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente termina su entrante muy rápido y cocina aún no tiene el principal listo. ¿Qué haces?',
+    situation_en: 'A guest finishes their starter very quickly and the kitchen does not have the main ready yet. What do you do?',
+    correct: 'Informo al cliente que el plato estará en breve y ofrezco más pan mientras espera. Comunico a cocina la situación sin presionar.',
+    correct_en: 'I inform the guest the dish will be ready shortly and offer more bread while they wait. I let the kitchen know about the wait without pressuring them.',
+    traps: [
+      'Retiro el plato vacío y no digo nada hasta que salga el principal.',
+      'Prometo al cliente que el plato saldrá en menos de 5 minutos.',
+      'Pregunto a cocina si pueden saltarse otro plato para dar prioridad a esta mesa.'
+    ],
+    traps_en: [
+      'Remove the empty plate and say nothing until the main arrives.',
+      'Promise the guest the dish will be out in less than 5 minutes.',
+      'Ask the kitchen to skip another dish to prioritise this table.'
+    ]
+  },
+
+  // Plato no disponible
+  { id:'c25', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente pide un plato que ya no está en carta. ¿Qué haces?',
+    situation_en: 'A guest asks for a dish that is no longer on the menu. What do you do?',
+    correct: 'Me disculpo e informo que ese plato ya no está disponible. Ofrezco alternativas similares de la carta actual y, si el cliente insiste, consulto con el chef.',
+    correct_en: 'I apologise and inform the guest that dish is no longer available. I offer similar alternatives from the current menu and if the guest insists, I consult the chef.',
+    traps: [
+      'Le digo que ese plato nunca ha estado en nuestra carta.',
+      'Consulto con cocina directamente sin dar ninguna explicación al cliente.',
+      'Ofrezco alternativas sin disculparme por la inconveniencia.'
+    ],
+    traps_en: [
+      'Tell the guest that dish has never been on the menu.',
+      'Check with the kitchen directly without giving any explanation to the guest.',
+      'Offer alternatives without apologising for the inconvenience.'
+    ]
+  },
+
+  // Mesa pide cuenta antes de terminar
+  { id:'c26', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente pide la cuenta pero aún le queda el postre por llegar. ¿Qué haces?',
+    situation_en: 'A guest asks for the bill but their dessert has not arrived yet. What do you do?',
+    correct: 'Traigo la cuenta para que la revisen mientras esperan el postre. No cobro hasta que terminen de comer.',
+    correct_en: 'I bring the bill so they can review it while waiting for dessert. I do not charge until they have finished eating.',
+    traps: [
+      'Cobro inmediatamente para agilizar y traigo el postre después.',
+      'Le digo que traeré la cuenta cuando termine el postre.',
+      'Pregunto si prefiere cancelar el postre para poder cobrar antes.'
+    ],
+    traps_en: [
+      'Charge immediately to speed things up and bring dessert after.',
+      'Tell them I will bring the bill once the dessert has arrived.',
+      'Ask if they would prefer to cancel the dessert so I can charge sooner.'
+    ]
+  },
+
+  // Cambio de mesa
+  { id:'c27', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente pide cambiar de mesa a mitad del servicio porque le molesta el ruido. ¿Qué haces?',
+    situation_en: 'A guest asks to change tables mid-service because of noise. What do you do?',
+    correct: 'Consulto inmediatamente con el manager o la Hostess para buscar una mesa disponible. Si hay opción, coordino el traslado de cubiertos, copas y comida.',
+    correct_en: 'I immediately consult the manager or Hostess to find an available table. If possible, I coordinate moving the cutlery, glasses and food.',
+    traps: [
+      'Le digo que no es posible cambiar de mesa una vez comenzado el servicio.',
+      'Busco una mesa yo mismo sin consultar con el manager.',
+      'Le pido que espere a terminar el plato que tiene antes de cambiar.'
+    ],
+    traps_en: [
+      'Tell the guest it is not possible to change tables once service has started.',
+      'Find a table myself without consulting the manager.',
+      'Ask them to wait until they finish their current dish before moving.'
+    ]
+  },
+
+  // Invitación / NP
+  { id:'c28', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'El manager te indica que la mesa 12 va invitada. ¿Cómo lo gestionas en el sistema?',
+    situation_en: 'The manager tells you table 12 is complimentary. How do you handle it in the system?',
+    correct: 'Anoto NP en el sistema y lo confirmo con el manager antes de cerrar la cuenta. Solo el manager o supervisor puede autorizar una invitación.',
+    correct_en: 'I note NP in the system and confirm with the manager before closing the account. Only the manager or supervisor can authorise a complimentary.',
+    traps: [
+      'Cierro la cuenta directamente sin anotar nada especial.',
+      'Anoto un descuento del 100% en cada línea de la comanda.',
+      'Borro los artículos de la comanda uno por uno para que no aparezcan.'
+    ],
+    traps_en: [
+      'Close the account directly without noting anything special.',
+      'Apply a 100% discount to each line of the order.',
+      'Delete the items from the order one by one so they do not appear.'
+    ]
+  },
+
+  // Split de cuenta
+  { id:'c29', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Una mesa de 4 quiere dividir la cuenta en partes iguales. ¿Qué haces?',
+    situation_en: 'A table of 4 wants to split the bill equally. What do you do?',
+    correct: 'Lo gestiono en Infrasys dividiendo el total entre los comensales. Si hay dificultad técnica aviso al supervisor inmediatamente.',
+    correct_en: 'I handle it in Infrasys by splitting the total between the guests. If there is a technical issue I notify the supervisor immediately.',
+    traps: [
+      'Les digo que solo se puede pagar con una cuenta por mesa.',
+      'Hago el cálculo manual y cobro en efectivo para agilizar.',
+      'Le pido a un comensal que pague todo y que luego se arreglen entre ellos.'
+    ],
+    traps_en: [
+      'Tell them only one bill per table is possible.',
+      'Do the calculation manually and collect cash to speed things up.',
+      'Ask one guest to pay everything and sort it out among themselves.'
+    ]
+  },
+
+  // Pago mixto
+  { id:'c30', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Un cliente quiere pagar parte a habitación y parte con tarjeta. ¿Qué haces?',
+    situation_en: 'A guest wants to charge part to the room and pay part by card. What do you do?',
+    correct: 'Lo gestiono en Infrasys haciendo un split de pago: una parte a la habitación y otra al terminal de tarjeta. Si tengo dudas consulto al supervisor.',
+    correct_en: 'I handle it in Infrasys with a split payment: part to the room and part to the card terminal. If unsure I consult the supervisor.',
+    traps: [
+      'Le digo que solo se puede pagar de una forma por cuenta.',
+      'Cargo todo a la habitación y le digo que lo gestione en recepción.',
+      'Cobro todo con tarjeta y le digo que solicite el reembolso en recepción.'
+    ],
+    traps_en: [
+      'Tell them only one payment method per bill is possible.',
+      'Charge everything to the room and tell them to sort it at reception.',
+      'Charge everything to the card and tell them to request a refund at reception.'
+    ]
+  },
+
+  // Cargo no reconocido
+  { id:'c31', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Un huésped dice que en su factura aparece un cargo de Txoko que no reconoce. ¿Qué haces?',
+    situation_en: 'A guest says their bill shows a Txoko charge they do not recognise. What do you do?',
+    correct: 'Busco la comanda en el sistema para verificar el cargo. Si hay un error lo comunico al manager inmediatamente. No modifico la factura sin autorización.',
+    correct_en: 'I look up the order in the system to verify the charge. If there is an error I inform the manager immediately. I do not modify the bill without authorisation.',
+    traps: [
+      'Le digo que todos los cargos son correctos y que revise su propia cuenta.',
+      'Elimino el cargo directamente para evitar problemas con el cliente.',
+      'Le pido que vaya a recepción a reclamar sin investigar el cargo.'
+    ],
+    traps_en: [
+      'Tell them all charges are correct and they should check their own account.',
+      'Remove the charge directly to avoid issues with the guest.',
+      'Ask them to go to reception to complain without investigating the charge.'
+    ]
+  },
+
+  // Cliente fotografía platos
+  { id:'c32', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente fotografía cada plato antes de comer. ¿Qué haces?',
+    situation_en: 'A guest photographs every dish before eating. What do you do?',
+    correct: 'Espero con discreción a que termine de fotografiar antes de hacer cualquier explicación del plato. No interrumpo ni apresuro al cliente.',
+    correct_en: 'I wait discreetly for them to finish photographing before giving any dish explanation. I do not interrupt or rush the guest.',
+    traps: [
+      'Inicio la explicación del plato mientras el cliente sigue fotografiando.',
+      'Le pido que no fotografíe los platos por política del restaurante.',
+      'Retiro la campana rápidamente antes de que pueda fotografiar.'
+    ],
+    traps_en: [
+      'Start explaining the dish while the guest is still photographing.',
+      'Ask them not to photograph dishes due to restaurant policy.',
+      'Remove the cloche quickly before they can photograph it.'
+    ]
+  },
+
+  // Cliente llega tarde
+  { id:'c33', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'Un cliente llega 45 minutos tarde a su reserva. ¿Qué haces?',
+    situation_en: 'A guest arrives 45 minutes late for their reservation. What do you do?',
+    correct: 'Le doy la bienvenida con normalidad y consulto con el manager si la mesa sigue disponible. Informo al cliente con discreción si hay alguna limitación de tiempo.',
+    correct_en: 'I welcome them normally and check with the manager if the table is still available. I discreetly inform the guest if there is any time limitation.',
+    traps: [
+      'Le informo en la puerta que su reserva ha sido cancelada por llegar tarde.',
+      'Le siento directamente sin consultar con el manager.',
+      'Le hago esperar en la barra mientras consulto con el manager sin explicarle nada.'
+    ],
+    traps_en: [
+      'Tell them at the door that their reservation has been cancelled for arriving late.',
+      'Seat them directly without consulting the manager.',
+      'Make them wait at the bar while consulting the manager without explaining anything.'
+    ]
+  },
+
+  // Huésped pide hablar con el chef
+  { id:'c34', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un huésped pide hablar con el chef para felicitarle por el menú. ¿Qué haces?',
+    situation_en: 'A guest asks to speak with the chef to compliment the menu. What do you do?',
+    correct: 'Transmito el mensaje al chef o al manager. No interrumpo la cocina directamente ni prometo que el chef saldrá sin confirmarlo antes.',
+    correct_en: 'I pass the message to the chef or manager. I do not interrupt the kitchen directly or promise the chef will come out without confirming first.',
+    traps: [
+      'Voy directamente a cocina a buscar al chef.',
+      'Le digo al cliente que el chef no puede salir durante el servicio.',
+      'Prometo al cliente que el chef saldrá en cuanto pueda sin consultarlo.'
+    ],
+    traps_en: [
+      'Go directly to the kitchen to fetch the chef.',
+      'Tell the guest the chef cannot come out during service.',
+      'Promise the guest the chef will come out when possible without checking.'
+    ]
+  },
+
+  // Cumpleaños no avisado
+  { id:'c35', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente menciona al sentarse que es su cumpleaños pero no hay nada reservado. ¿Qué haces?',
+    situation_en: 'A guest mentions as they sit down that it is their birthday but nothing has been arranged. What do you do?',
+    correct: 'Informo discretamente al manager para coordinar un detalle sorpresa. No prometo nada al cliente que no pueda cumplirse.',
+    correct_en: 'I discreetly inform the manager to coordinate a surprise detail. I do not promise the guest anything that cannot be guaranteed.',
+    traps: [
+      'Le digo que debería haberlo avisado al hacer la reserva.',
+      'Preparo yo mismo algo sin avisar al manager.',
+      'Le felicito y continúo el servicio normal sin hacer nada más.'
+    ],
+    traps_en: [
+      'Tell them they should have mentioned it when making the reservation.',
+      'Prepare something myself without notifying the manager.',
+      'Congratulate them and continue normal service without doing anything else.'
+    ]
+  }
+,
+
+  // ── VALORES ADICIONALES ──
+
+  { id:'c36', section:'valores', color:'#ab88c8', icon:'💎',
+    situation: 'Un huésped te llama por tu nombre y comenta que fue un placer su visita del mes pasado. No le recuerdas. ¿Qué haces?',
+    situation_en: 'A guest calls you by name and mentions what a pleasure their visit was last month. You do not remember them. What do you do?',
+    correct: 'Le doy una bienvenida cálida y sincera, y consulto discretamente el sistema para recuperar información de su visita anterior. El Valor 1 dice que debemos fidelizar a los huéspedes para toda la vida.',
+    correct_en: 'I give a warm and sincere welcome and discreetly check the system to recall information from their previous visit. Value 1 says we must create Ritz-Carlton guests for life.',
+    traps: [
+      'Le digo honestamente que no le recuerdo para no crear una confusión.',
+      'Finjo recordarle perfectamente para no incomodarle.',
+      'Le pregunto cuándo vino exactamente para poder buscar en el sistema delante de él.'
+    ],
+    traps_en: [
+      'Tell them honestly that I do not remember them to avoid confusion.',
+      'Pretend to remember them perfectly to avoid awkwardness.',
+      'Ask them exactly when they visited so I can search the system in front of them.'
+    ]
+  },
+
+  { id:'c37', section:'valores', color:'#ab88c8', icon:'💎',
+    situation: 'Ves que un huésped lleva 10 minutos mirando la carta de vinos sin pedir ayuda. ¿Qué valor aplicas y qué haces?',
+    situation_en: 'You notice a guest has been looking at the wine list for 10 minutes without asking for help. Which value applies and what do you do?',
+    correct: 'Aplico el Valor 2: soy responsable de satisfacer las necesidades no expresadas. Me acerco con discreción y ofrezco ayuda con la selección de vinos.',
+    correct_en: 'I apply Value 2: I am responsible for unexpressed needs. I approach discreetly and offer help with the wine selection.',
+    traps: [
+      'Espero a que el cliente pida ayuda — no quiero interrumpirle.',
+      'Le pregunto en voz alta desde la distancia si necesita algo.',
+      'Envío al sumiller directamente sin acercarme primero.'
+    ],
+    traps_en: [
+      'Wait for the guest to ask for help — I do not want to interrupt.',
+      'Ask loudly from a distance if they need anything.',
+      'Send the sommelier directly without approaching first.'
+    ]
+  },
+
+  { id:'c38', section:'valores', color:'#ab88c8', icon:'💎',
+    situation: 'Un compañero está desbordado con dos mesas a la vez y ves que una lleva esperando. ¿Qué valor aplicas?',
+    situation_en: 'A colleague is overwhelmed with two tables at once and you see one has been waiting. Which value applies?',
+    correct: 'Aplico el Valor 7: servicio lateral y trabajo en equipo. Me acerco a la mesa y les atiendo sin esperar a que mi compañero lo pida.',
+    correct_en: 'I apply Value 7: lateral service and teamwork. I approach the table and attend to them without waiting for my colleague to ask.',
+    traps: [
+      'Aviso a mi compañero de que tiene una mesa esperando y sigo con mi trabajo.',
+      'Espero a que el manager lo gestione.',
+      'Atiendo la mesa pero le digo al cliente que su camarero es mi compañero.'
+    ],
+    traps_en: [
+      'Tell my colleague they have a table waiting and continue with my work.',
+      'Wait for the manager to handle it.',
+      'Attend the table but tell the guest their waiter is my colleague.'
+    ]
+  },
+
+  // ── PASOS ADICIONALES ──
+
+  { id:'c39', section:'pasos', color:'#c8a96e', icon:'🌟',
+    situation: 'Al despedirte de una mesa no sabes el nombre del huésped. ¿Cómo aplicas el Paso 3?',
+    situation_en: 'When saying goodbye to a table you do not know the guest name. How do you apply Step 3?',
+    correct: 'Busco el nombre en el papel de la Hostess o en el sistema antes de que se vayan. Si no es posible, doy una despedida cordial y afectuosa igualmente — el nombre es fundamental pero la calidez no puede faltar.',
+    correct_en: 'I look for the name on the Hostess paper or in the system before they leave. If not possible, I give a warm and fond farewell regardless — the name is key but warmth must always be present.',
+    traps: [
+      'Me despido sin usar el nombre — no quiero arriesgarme a decir uno incorrecto.',
+      'Pregunto directamente al cliente cómo se llama antes de despedirme.',
+      'Solo aplico el Paso 3 cuando conozco el nombre del huésped.'
+    ],
+    traps_en: [
+      'Say goodbye without using the name — I do not want to risk using the wrong one.',
+      'Ask the guest directly what their name is before saying goodbye.',
+      'Only apply Step 3 when I know the guest name.'
+    ]
+  },
+
+  { id:'c40', section:'pasos', color:'#c8a96e', icon:'🌟',
+    situation: 'Una huéspeda lleva un pañuelo en el cuello y hace frío en la terraza. No ha pedido nada. ¿Qué paso aplicas?',
+    situation_en: 'A guest is wearing a scarf and it is cold on the terrace. She has not asked for anything. Which step applies?',
+    correct: 'El Paso 2: me anticipo a sus necesidades no expresadas. Ofrezco una manta o le informo de que podemos acomodarla en un lugar más resguardado.',
+    correct_en: 'Step 2: I anticipate her unexpressed needs. I offer a blanket or inform her we can seat her in a more sheltered spot.',
+    traps: [
+      'Espero a que la huéspeda pida una manta si la necesita.',
+      'Le pregunto si tiene frío antes de ofrecerle nada.',
+      'No hago nada — la terraza tiene la temperatura que tiene.'
+    ],
+    traps_en: [
+      'Wait for the guest to ask for a blanket if she needs one.',
+      'Ask if she is cold before offering anything.',
+      'Do nothing — the terrace temperature is what it is.'
+    ]
+  },
+
+  { id:'c41', section:'pasos', color:'#c8a96e', icon:'🌟',
+    situation: 'Es la primera vez que ves a un huésped en el restaurante. ¿Cómo aplicas el Paso 1 correctamente?',
+    situation_en: 'It is the first time you see a guest at the restaurant. How do you correctly apply Step 1?',
+    correct: 'Doy una bienvenida cordial y sincera usando su nombre — que obtengo del papel de la Hostess antes de acercarme. El contacto visual y el tono cálido son imprescindibles.',
+    correct_en: 'I give a warm and sincere greeting using their name — which I obtain from the Hostess paper before approaching. Eye contact and a warm tone are essential.',
+    traps: [
+      'Les saludo con un cordial "buenas noches" sin usar el nombre ya que es su primera visita.',
+      'Espero a que estén sentados y cómodos antes de saludarles.',
+      'Uso el nombre solo si es un huésped VIP o Special Guest.'
+    ],
+    traps_en: [
+      'Greet them with a warm "good evening" without using their name since it is their first visit.',
+      'Wait until they are seated and comfortable before greeting them.',
+      'Only use the name if they are a VIP or Special Guest.'
+    ]
+  }
 ];
 
 
@@ -2141,7 +2521,7 @@ function renderCredo() {
   </svg>`;
 
   c.innerHTML = `
-    <div style="background:linear-gradient(175deg,#f8f5f0 0%,#f2eae0 50%,#ede5d8 100%);min-height:100vh;padding:2rem 1.5rem 4rem;position:relative;overflow:hidden">
+    <div style="background:linear-gradient(175deg,#f8f5f0 0%,#f2eae0 50%,#ede5d8 100%);min-height:100vh;padding:2rem 1.5rem 4rem;position:relative;overflow-x:hidden;overflow-y:auto">
 
       <!-- Subtle background texture -->
       <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(91,141,184,.06) 0%,transparent 60%);pointer-events:none"></div>
@@ -2151,7 +2531,7 @@ function renderCredo() {
 
       <!-- Header with crown symbol -->
       <div style="text-align:center;margin-bottom:2.5rem">
-        <div style="width:100px;margin:0 auto .75rem">${crownSVG}</div>
+        <div style="width:min(100px,25vw);margin:0 auto .75rem">${crownSVG}</div>
         <div style="font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.3em;color:#5b8db8;text-transform:uppercase;margin-bottom:.6rem;opacity:.8">The Ritz-Carlton</div>
         <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:400;color:#1a3a5c;letter-spacing:.06em;line-height:1.1">
           ${LANG==='en'?'The Credo':'El Credo'}
@@ -2203,7 +2583,7 @@ function renderCredo() {
         ].map(v => `
           <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 0;border-bottom:1px solid rgba(91,141,184,.07)">
             <div style="width:22px;text-align:center;flex-shrink:0;font-family:'DM Mono',monospace;font-size:.62rem;color:#5b8db8;margin-top:.25rem;opacity:.7">${v.n}</div>
-            <div style="font-family:'Jost',sans-serif;font-size:.85rem;color:#2c3e50;line-height:1.6;font-weight:300">${LANG==='en'?v.en:v.es}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:.87rem;color:#1a2a3a;line-height:1.65;font-weight:300">${LANG==='en'?v.en:v.es}</div>
           </div>`).join('')}
       </div>
 
@@ -2421,7 +2801,7 @@ function getDish(d) {
 const DISHES = [
   {id:1,cat:'Entrantes',name:'Croquetas Premium',allergens:['Huevos','Gluten','Lácteos','Crustáceos','Pescado','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Leche, Harina, Mantequilla, Nata, Gelatina, Huevo. Jamón: loncha de jamón. Txipiron: tartar de txipiron. Langostino: americana y tartar de langostino. Dry Age: mermelada de piparra, tartar de Dry y piparra. Boletus: manzana confitada. Pollo: cogollo de lechuga, aderezo césar, lámina de pollo con Demi-glace y crujiente de bacon.',history:'Nacidas del ingenio y el amor por no desperdiciar, las croquetas viajaron desde Francia hasta el alma de España. En cada casa, una receta; en cada bocado, un recuerdo. Crujientes por fuera, suaves por dentro, son el abrazo dorado de la cocina casera, el sabor de la abuela que nunca se olvida. Nuestras croquetas son premium por el Topping que lleva cada una para culminar.',notes:'Sabores disponibles: Jamón, Txipiron, Langostino, Dry Age, Boletus, Pollo'},
   {id:2,cat:'Entrantes',name:'Huevo frito con chistorra',allergens:['Huevos','Lácteos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Papa, Huevo, Nata, Caldo de pollo, Chistorra.',history:'Chistorra de Navarra, uno de los productos de tierra vasca en nuestra carta, acompañada de crema de papa canaria y huevos de caserío, nos dan como resultado un plato redondo en boca por sabor y textura.',notes:'Nuestra versión de los huevos a la estampida: huevo a baja temperatura y frito, espuma de papa, papa paja y chistorra.'},
-  {id:3,cat:'Entrantes',name:'Calamares a la Andaluza',allergens:['Moluscos','Gluten','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Calamar, Harina, Levadura, Agua, Cerveza, Sal, Ajo, Limón, Tinta de Txipiron. Alioli cítrico y alioli de tinta de calamar: Huevo, Aceite, Ajo, Limón.',history:'Es una reinterpretación de los calamares rebozados, con una tempura súper crujiente y un calamar de textura muy agradable han hecho que este plato se mantenga 8 años en la carta.',notes:'⭐ 8 años en la carta. Calamares en tempura con alioli cítrico y alioli de tinta de calamar. ⚠️ Huevos en el alioli — puede servirse sin alioli bajo petición.'},
+  {id:3,cat:'Entrantes',name:'Calamares a la Andaluza',allergens:['Moluscos','Gluten','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Calamar, Harina, Levadura, Agua, Cerveza, Sal, Ajo, Limón, Tinta de Txipiron. Alioli cítrico y alioli de tinta de calamar: Huevo, Aceite, Ajo, Limón.',history:'El Atlántico que rodea Tenerife es uno de los caladeros más ricos del mundo. Estos calamares frescos, capturados en las aguas frías que bañan las costas canarias, se visten con una tempura ligera y crujiente inspirada en la tradición andaluza. Ocho años en nuestra carta avalan un bocado que combina el mar de Canarias con la técnica de la cocina del sur.',notes:'⭐ 8 años en la carta. Calamares en tempura con alioli cítrico y alioli de tinta de calamar. ⚠️ Huevos en el alioli — puede servirse sin alioli bajo petición.'},
   {id:4,cat:'Entrantes',name:'Tomates aliñados',allergens:['Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ventresca, Anchoas, Tomates, Cebolla roja, Vinagre de Jerez, Granizado de gazpacho, Granadina, Oporto, Vinagreta de Cabernet Sauvignon.',history:'Elaborada con tomates ecológicos de la localidad de Arico, la anchoa y la ventresca resaltan el sabor clásico de la ensalada mediterránea. El clima de la isla nos aporta todo el año tomates muy sabrosos que combinados con el granizado de gazpacho refrescante lo hacen un plato perfecto para intercalar en los entrantes para compartir.',notes:'Tomates ecológicos con ventresca de atún, anchoas, cebolletas encurtidas y granizado de gazpacho. Terminado con brotes de berros.'},
   {id:5,cat:'Entrantes',name:'Pámpano marinado al mojo rojo',allergens:['Frutos de cáscara','Gluten','Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pámpano, Pimiento palmero, Pimiento rojo, Ajo, Huevas de salmón, Huevas de Tobiko, Aguacate, Tabasco, Pan de algas, Naranja confitada, Cilantro, Chips de kale.',history:'Pescado azul de Canarias, de carne grasa y textura inigualable, marinado 24 horas en sal y sabores intensos como el del mojo rojo. Matices como el picante, el fresco del cilantro y el dulce de la naranja logran un equilibrio perfecto. Un clásico de Txoko.',notes:'⭐ Clásico de Txoko. Marinado 24h en mojo rojo. Crema de aguacate picante, naranja confitada, pan de algas, huevas de Tobiko y de salmón, chips de kale.'},
   {id:6,cat:'Entrantes',name:'Peras escalivadas con cremoso de queso de cabra',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pera, Espuma de queso de cabra (Nata, Leche, Queso de cabra, Queso azul), Migas de Ibérico (Ibéricos y miga de pan), Vinagreta de mostaza (Aceite de oliva, Vinagre de manzana, Miel, Mostaza Dijon, Mostaza antigua), Almendras, Brotes de mostaza y mézclum.',history:null,notes:'Peras escalivadas en el josper peladas y cortadas en cuartos. Con vinagreta de mostaza, almendras laminadas tostadas, espuma de queso de cabra y migas de ibérico. Terminamos con brotes de mostaza.'},
@@ -2460,7 +2840,7 @@ const DISHES = [
   {id:41,cat:'Postres',name:'Tocinillo de cielo',allergens:['Frutos de cáscara','Gluten','Lácteos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Huevos, Limón, Jengibre, Cacao, Café, Avellanas.',history:'El tocinillo es un postre tradicional español, muy dulce y con una textura suave y brillante, similar al flan pero más denso. Proveniente de Andalucía. Nosotros reversionamos esta receta añadiéndole otras preparaciones para llevarlo al estilo Txoko.',notes:'Crema de yema, helado de limón y jengibre, teja de chocolate, culminado con una teja de café y avellanas.'},
   {id:42,cat:'Postres',name:'Brownie de avellanas con crema de cacao y mandarina',allergens:['Frutos de cáscara','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchara de postre',ingredients:'Claras, Harina de avellanas, Chocolate negro, Cremoso de chocolate blanco, Helado de chocolate, Crema de mandarina.',history:'Este es uno de nuestros postres Gluten-free (aunque siempre aclaramos que puede contener trazas) ya que está hecho a base de harina de avellanas.',notes:'⚠️ Gluten-free pero puede contener TRAZAS. Brownie de avellana y chocolate, helado de chocolate, tubo de chocolate relleno con cremoso de cacao y mandarina. Terminamos con ganache de chocolate blanco.'},
   {id:43,cat:'Postres',name:'Mousse de gofio con helado de plátano canario',allergens:['Frutos de cáscara','Lácteos','Huevos','Sulfitos','Gluten'],cutlery:'Tenedor de postre, Cuchara de postre',ingredients:'Leche, Plátano, Gofio, Huevo, Xantana, Nata, Azúcar, Sal maldon, Mantequilla, Harina, Vinagre de manzana, Almendras tostadas, Glucosa atomizada, Plátano osmotizado, Toffe.',history:null,notes:'Mousse de gofio y plátano canario, con plátano osmotizado y helado del mismo. Feuilletine, almendras tostadas y toffee.'},
-  {id:44,cat:'Postres',name:'Pastel Vasco invertido con tartar de manzana',allergens:['Gluten','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchillo de postre, Cuchara de postre',ingredients:'Harina, Azúcar, Mantequilla, Huevo, Levadura, Ron, Sal, Leche, Maizena, Limón, Vainilla, Hinojo, Nata, Glucosa, Cremodan.',history:null,notes:'⏱️ Mínimo 30 minutos de espera (recién horneado). Avisar al huésped al tomar la comanda. Bizcocho con capa de crema pastelera y tartar de manzana. Terminamos con helado artesanal de hinojo.'},
+  {id:44,cat:'Postres',name:'Pastel Vasco invertido con tartar de manzana',allergens:['Gluten','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchillo de postre, Cuchara de postre',ingredients:'Harina, Azúcar, Mantequilla, Huevo, Levadura, Ron, Sal, Leche, Maizena, Limón, Vainilla, Hinojo, Nata, Glucosa, Cremodan.',history:'Receta centenaria del País Vasco, tierra de origen de Martín Berasategui. Bizcocho recién horneado al momento, relleno de crema pastelera y tartar de manzana. Un postre que viajó desde el País Vasco hasta los acantilados de Abama, donde el Atlántico y la brisa canaria lo convierten en algo único. Treinta minutos de espera que siempre valen la pena.',notes:'⏱️ Mínimo 30 minutos de espera (recién horneado). Avisar al huésped al tomar la comanda. Bizcocho con capa de crema pastelera y tartar de manzana. Terminamos con helado artesanal de hinojo.'},
   {id:45,cat:'Vegetariano',name:'Tomates aliñados con granizado de gazpacho',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Tomate, Aguacate, Cebolleta, Granizado de gazpacho, Granadina, Vinagreta de Cabernet Sauvignon.',history:'Es nuestra versión vegetariana de nuestro plato mítico de tomates, anchoas y ventresca.',notes:'🌱 Versión VEGAN adaptable. Tomates ecológicos con cebolletas encurtidas y granizado de gazpacho (sin pan). Terminado con brotes de berros.'},
   {id:46,cat:'Vegetariano',name:'Patatas confitadas con verduras mixtas',allergens:['Mostaza','Sulfitos','Huevos'],cutlery:'Tenedor trinchero, Cuchara sopera',ingredients:'Papa, Lechuga, Tomate, Judías verdes, Pimiento asado, Huevo de Codorniz, Salsa de cítricos, Brotes de mostaza, Miel, Yema de huevo.',history:'Carpaccio de papa canaria confitada, acompañada de verduras ecológicas de la isla y aliñada con mayonesa cítrica.',notes:'🌱 Versión VEGAN adaptable. Papas confitadas, pimientos confitados, tomate, judías verdes, puntos de mayonesa cítrica y mermelada de limón.'},
   {id:48,cat:'Vegetariano',name:'Tartar de remolacha, aguacate y manzana ácida',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Remolacha, Aguacate, Manzana, Sorbete de manzana verde, Láminas de rabanitos encurtidas, Espuma de remolacha.',history:'Utilizamos remolachas orgánicas de productores locales, que al mezclarse con la suave crema de aguacate y el refrescante sorbete de manzana verde nos deja por resultado un plato súper equilibrado, ideal como entrante.',notes:'⭐ 100% VEGANO. Tartar de remolacha y manzana con cremoso de aguacate, remolacha en texturas y sorbete de manzana verde.'},
@@ -2475,14 +2855,14 @@ const DISHES = [
   {id:58,cat:'Vegetariano',name:'Patatas cerilla fritas',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Patatas locales, Aceite, Sal.',history:'Nuestras patatas locales provienen de Tacoronte.',notes:'🌱 Versión VEGAN adaptable. ⚠️ Sin alérgenos pero posible contaminación cruzada de gluten. Servir siempre salsas para los niños.'},
   // ===== NUEVOS ENTRANTES =====
   {id:65,cat:'Entrantes',name:'Pimientos del padrón',allergens:['Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pimientos del padrón, Pimienta, Sal',history:'Nuestros pimientos de Padrón son ecológicos y provenientes de granadilla.',notes:'⚠️ Se pueden preparar sin gluten — avisar al equipo de cocina.'},
-  {id:66,cat:'Entrantes',name:'Espárragos a la brasa',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'',history:'',notes:null},
+  {id:66,cat:'Entrantes',name:'Espárragos a la brasa',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Espárragos, Aceite de oliva, Sal.',history:'',notes:null},
   {id:67,cat:'Entrantes',name:'Alitas melosas glaseadas',allergens:['Soja'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Toallitas húmedas (Finger balls)',ingredients:'Alitas de pollo, Aceite girasol, Soja, Miel de palma, Jengibre, Caldo de verduras (Cebolla, Puerro, Zanahoria, Calabaza y Garbanzos), Sal',history:'',notes:null},
   {id:68,cat:'Entrantes',name:'Papas bravas al estilo Txoko',allergens:['Huevos','Sulfitos','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Papa, Queso Parmesano, Caldo de pollo, Cebolla, Tomate, Vinagre de jerez, Cayena, Ajo, Huevo, Aceite de girasol, Sal',history:'Nuestras papas bravas están hechas con una base de terrina de papa (entre capa y capa colocamos queso parmesano que sirve como pegamento). Terminamos con puntos de salsa brava y puntos de ali-oli.',notes:null},
   {id:69,cat:'Entrantes',name:'Fish and chips',allergens:['Pescado','Gluten','Huevos','Mostaza','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Bacalao. Tempura: Harina floja, Panko, Huevo, Trisol, Levadura prensada, Agua, Cerveza, Sal. Salsa tártara: Mayonesa, Huevo duro, Pepinillo, Mostaza Dijon, Anchoas, Alcaparra, Chalota, Cebollino, Estragón, Perejil. Chips de papa',history:'',notes:'⚠️ Mostaza y sulfitos en la salsa tártara — puede servirse sin salsa.'},
   {id:71,cat:'Entrantes',name:'Mejillones a la brasa',allergens:['Sulfitos','Moluscos'],cutlery:'Tenedor trinchero, Cuchara sopera, Plato extra para las conchas',ingredients:'Mejillones. Refrito: Ajo, Guindilla, Aceite de oliva, Vinagre de manzana',history:'',notes:null},
   {id:72,cat:'Entrantes',name:'Tomates ecológicos',allergens:['Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tomate, Anchoas, Boquerones, Aguacate, Cebolleta, Polvo de aceituna calamata, Vinagreta de cabernet, Berro',history:'',notes:null},
   {id:73,cat:'Entrantes',name:'Carpaccio con espuma de parmesano',allergens:['Mostaza','Lácteos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Picaña, Rúcula, Parmesano, Piparras. Vinagreta: Aceite, Mostaza, Vinagre de jerez, Zumo de limón, Pimienta molida, Sal, Agua de tomate. Espuma: Parmesano rayado, Leche, Nata, Sal, Pimienta. Polvo de aceituna calamata',history:'',notes:null},
-  {id:74,cat:'Entrantes',name:'Rejo de pulpo con papa y mojo verde',allergens:['Sulfitos','Moluscos','Lácteos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Pulpo, Chalota, Perejil, Mantequilla, Fumet (Caldo de pescado). Mojo verde: Cilantro, Vinagre de manzana, Lima, Ajo, Aceite de girasol, Aceite de oliva, Cebolleta, Pimienta de Espellet. Papa canaria',history:'',notes:'⚠️ Lácteos en la mantequilla — puede prepararse sin mantequilla bajo petición.'},
+  {id:74,cat:'Entrantes',name:'Rejo de pulpo con papa y mojo verde',allergens:['Sulfitos','Moluscos','Lácteos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',history:'El rejo — las patas del pulpo — es la parte más valorada por los conocedores. Cocinado a baja temperatura y terminado a la brasa, sobre papa canaria con mojo verde de aguacate. Un plato que rinde homenaje a dos productos que definen las islas: el pulpo del Atlántico y la papa canaria, cultivada en tierras volcánicas.',ingredients:'Pulpo, Chalota, Perejil, Mantequilla, Fumet (Caldo de pescado). Mojo verde: Cilantro, Vinagre de manzana, Lima, Ajo, Aceite de girasol, Aceite de oliva, Cebolleta, Pimienta de Espellet. Papa canaria',history:'',notes:'⚠️ Lácteos en la mantequilla — puede prepararse sin mantequilla bajo petición.'},
   {id:75,cat:'Entrantes',name:'Pollo brasa con huevo a baja temperatura',allergens:['Huevos','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Huevo. Espuma de papa: Papa, Caldo, Nata, Aceite de oliva, Sal. Pollo. Demi glace: Huesos de pollo, Cebolla, Zanahoria, Puerro, Mantequilla. Papa paja',history:'',notes:null},
   {id:77,cat:'Entrantes',name:'Ensalada de Mero del Hierro',allergens:['Pescado','Mostaza','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Mero, Huevo de codorniz, Naranja. Tomate Tumaka: Tomate rallado, Sal, Aceite de oliva. Cebolla encurtida: Lima, Cayena. Espuma de pil pil: Caldo/Gelatina de pescado, Aceite de oliva, Guindilla. Polvo de aceituna calamata, Brotes de mostaza',history:'',notes:null},
   {id:78,cat:'Entrantes',name:'Tataki de Atún (Almuerzo)',allergens:['Pescado','Mostaza','Huevos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Atún. Rebozado: Harina, Huevo, Panko. Cebollas encurtidas: Granadina (Vinagre de manzana, Granadina), Porto (Vinagre de jerez, Oporto, Agua), Sake (Vinagre de cabernet, Sake, Agua). Huevas de Tobiko, Huevas de aceite. Mermelada de papaya: Papaya, Azúcar, Agua, Pimienta de Jamaica, Guindilla, Aceite de oliva, Vinagre de manzana. Mayonesa de wasabi, Vinagreta de Mostaza antigua y Miel',history:'',notes:null},
