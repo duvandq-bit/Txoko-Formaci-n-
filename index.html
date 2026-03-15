@@ -1376,19 +1376,6 @@ body::before{
 </head>
 <body>
 
-<!-- ═══════ SPLASH ═══════ -->
-<div id="splashScreen">
-  <div class="splash-eyebrow">Ritz-Carlton Abama · Tenerife</div>
-  <div class="splash-logo">TXOKO</div>
-  <div class="splash-sub">by Martín Berasategui</div>
-  <div class="splash-rule"></div>
-  <div class="splash-loader">
-    <div class="splash-dot"></div>
-    <div class="splash-dot"></div>
-    <div class="splash-dot"></div>
-  </div>
-</div>
-
 <!-- ═══════ LOGIN ═══════ -->
 <div id="screenLogin" class="screen active">
   <div class="login-eyebrow"><span>Ritz-Carlton Abama · Tenerife</span></div>
@@ -1431,6 +1418,7 @@ body::before{
 
   <nav class="app-nav" id="appNav">
     <button class="nav-btn active" id="navDashboard" onclick="showTab('dashboard')">Inicio</button>
+    <button class="nav-btn" id="navProtocolo" onclick="showTab('protocolo')">📋 Protocolo</button>
     <button class="nav-btn" id="navFlashcards" onclick="showTab('flashcards')">Flashcards</button>
     <button class="nav-btn" id="navExam" onclick="showTab('exam')">Examen</button>
     <button class="nav-btn" id="navRepaso" onclick="showTab('repaso')">Repaso</button>
@@ -1668,7 +1656,8 @@ function setLang(lang) {
   document.getElementById('loginNewLabel').textContent = t('newLabel');
   document.getElementById('loginEnterBtn').textContent = t('enterBtn');
   document.getElementById('newEmpInput').placeholder = t('inputPlaceholder');
-  
+  if(typeof DB !== 'undefined') renderLogin();
+}
 
 // ═══ CERTIFICACIONES POR CATEGORÍA ═══
 const CERT_THRESHOLD = 0.80; // 80% of dishes in category known = certified
@@ -1681,57 +1670,551 @@ const SUP_PIN = '1966'; // Duvan's supervisor PIN
 let supAuthenticated = false;
 
 
-function renderSupDeleteEmployee(empNames) {
+
+
+
+
+// ═══════════════════════════════════════════════
+// ═══ MÓDULO PROTOCOLO ═══
+// ═══════════════════════════════════════════════
+
+const PROTOCOLO_SECTIONS = [
+  {
+    id: 'servicio',
+    icon: '🤵',
+    title: 'Reglas de Servicio',
+    title_en: 'Service Rules',
+    color: '#7095c8',
+    rules: [
+      { id:'p1', title:'3 pasos del servicio (Ritz-Carlton)', title_en:'3 Steps of Service', body:'1. Dar una cordial y sincera bienvenida utilizando el nombre del huésped. 2. Anticiparse y satisfacer las necesidades de cada huésped. 3. Dar una cordial y afectuosa despedida utilizando el nombre del huésped.', body_en:'1. Give a warm and sincere greeting using the guest name. 2. Anticipate and fulfil the needs of each guest. 3. Give a fond farewell using the guest name.' },
+      { id:'p2', title:'Explicación y storytelling de cada plato', title_en:'Dish explanation & storytelling', body:'Cada plato debe explicarse al llegar a la mesa: nombre, ingredientes principales y su storytelling.', body_en:'Every dish must be explained upon arrival: name, main ingredients and its story.' },
+      { id:'p3', title:'Protocolo para el servicio de carnes', title_en:'Meat service protocol', body:'Mostrar los puntos de cocción, confirmar el punto elegido con el cliente y comandar la carne indicando el punto exacto.', body_en:'Show cooking levels, confirm the chosen point with the guest and order the meat indicating the exact point.' },
+      { id:'p4', title:'Ofrecer sal y pimienta tras cortar la carne', title_en:'Salt & pepper after carving', body:'Siempre que se corte carne en la mesa, se debe ofrecer sal y pimienta inmediatamente después.', body_en:'Whenever meat is carved at the table, salt and pepper must be offered immediately after.' },
+      { id:'p5', title:'Marcaje correcto de la mesa', title_en:'Correct table setting', body:'La mesa debe estar correctamente marcada antes de que llegue cualquier plato. No se permitirá que un plato llegue a la mesa si el marcaje correspondiente no está preparado.', body_en:'The table must be correctly set before any dish arrives. No dish may arrive if the corresponding cutlery is not ready.' },
+      { id:'p6', title:'Guarniciones y salsas siempre con cuchara', title_en:'Sides & sauces always with spoon', body:'Todas las guarniciones y salsas deben salir siempre con cuchara. El marcaje debe seguir exactamente el Plating Guide o la aplicación operativa.', body_en:'All sides and sauces must always be served with a spoon, following the Plating Guide exactly.' },
+      { id:'p7', title:'Gestión de copas en mesa', title_en:'Glass management', body:'Si un cliente no desea continuar con una bebida, la copa debe retirarse inmediatamente. No se deben dejar copas vacías en mesa.', body_en:'If a guest no longer wishes to drink, the glass must be removed immediately. No empty glasses on the table.' },
+      { id:'p8', title:'Informar tiempos de cocina', title_en:'Inform kitchen timing', body:'Cuando una mesa solicite marcha y pasa o desee pedir por partes, se debe informar que el siguiente paso puede tardar aproximadamente 40 minutos.', body_en:'When a table requests courses or wishes to order in parts, inform that the next course may take approximately 40 minutes.' },
+      { id:'p9', title:'Igualdad al remontar mesa', title_en:'Equal service when resetting', body:'Cuando una mesa se remonta para un nuevo cliente, debe recibir exactamente las mismas condiciones de servicio, limpieza y preparación que el primer cliente.', body_en:'When a table is reset for a new guest, they must receive exactly the same service conditions as the previous guest.' },
+      { id:'p10', title:'Limpieza de sillas', title_en:'Chair cleaning', body:'Las sillas deben revisarse y limpiarse antes de cada servicio y durante el mismo si es necesario.', body_en:'Chairs must be checked and cleaned before each service and during if necessary.' },
+    ]
+  },
+  {
+    id: 'comandas',
+    icon: '📝',
+    title: 'Comandas y Gestión de Mesas',
+    title_en: 'Orders & Table Management',
+    color: '#c8a96e',
+    rules: [
+      { id:'p11', title:'Verificar el papel de la Hostess', title_en:'Verify Hostess paper', body:'Verificar siempre el papel con la información del huésped: número de habitación, nombre, alergias, restricciones alimentarias y si está identificado como VIP.', body_en:'Always verify the guest information paper: room number, name, allergies, dietary restrictions and VIP status.' },
+      { id:'p12', title:'Aperitivo VIP inmediato', title_en:'Immediate VIP welcome drink', body:'Si el huésped está identificado como VIP, se debe pedir inmediatamente el aperitivo VIP correspondiente para adultos o niños.', body_en:'If the guest is identified as VIP, the corresponding VIP welcome drink for adults or children must be requested immediately.' },
+      { id:'p13', title:'Apertura de mesa en máximo 3 minutos', title_en:'Table opening in max 3 minutes', body:'Una vez recibida la información del huésped, la mesa debe abrirse en el sistema en un máximo de 3 minutos. Si no se puede, pedir ayuda a un compañero, supervisor o manager.', body_en:'Once guest information is received, the table must be opened in the system within 3 minutes maximum.' },
+      { id:'p14', title:'Comandas completas de una sola vez', title_en:'Complete orders in one go', body:'Las comandas deben realizarse una sola vez y completas. No se aceptarán peticiones como "pedimos ahora los entrantes y luego los principales".', body_en:'Orders must be taken once and in full. Requests such as "starters now and mains later" are not accepted.' },
+      { id:'p15', title:'Control del pan durante el servicio', title_en:'Bread control during service', body:'Vigilar constantemente el pan disponible. Cuando quede solo una bandeja o uno o dos panes para cortar, pedir inmediatamente más pan a cocina.', body_en:'Constantly monitor available bread. When only one tray or one or two loaves remain, immediately request more from the kitchen.' },
+      { id:'p16', title:'Comandar el vino correctamente', title_en:'Order wine correctly', body:'Al comandar vino indicar para cuántas personas es y el número de copas asignadas a la mesa.', body_en:'When ordering wine, indicate how many guests it is for and the number of glasses assigned to the table.' },
+      { id:'p17', title:'Sin coctelería fuera de carta en cena', title_en:'No off-menu cocktails at dinner', body:'Prohibido pedir smoothies, batidos o coctelería fuera de carta durante la cena. Solo se pueden ofrecer los cócteles presentes en la carta de vinos.', body_en:'No smoothies, milkshakes or off-menu cocktails during dinner. Only cocktails listed on the wine menu may be offered.' },
+      { id:'p18', title:'Guarniciones del menú infantil solo para niños', title_en:'Children’s menu sides for children only', body:'Prohibido vender guarniciones del menú infantil a adultos. La única excepción es la crema de calabaza para adulto con suplemento de 4€.', body_en:'Children’s menu sides may not be sold to adults. The only exception is pumpkin cream for adults with a €4 supplement.' },
+    ]
+  },
+  {
+    id: 'sistema',
+    icon: '💻',
+    title: 'Sistema, Seguridad y Facturación',
+    title_en: 'System, Safety & Billing',
+    color: '#6bab82',
+    rules: [
+      { id:'p19', title:'Gestión de alergias en cada comanda', title_en:'Allergy management per order', body:'Una vez identificada una alergia, debe indicarse en cada plato, guarnición y modificación para evitar contaminación cruzada en cocina.', body_en:'Once an allergy is identified, it must be noted on every dish, side and modification to avoid cross-contamination in the kitchen.' },
+      { id:'p20', title:'Consumo de alérgenos bajo responsabilidad del cliente', title_en:'Allergen consumption at guest’s risk', body:'Si un huésped insiste en consumir un plato que contiene un alérgeno que ha declarado, escribir en la comanda "OK CLIENTE".', body_en:'If a guest insists on consuming a dish containing a declared allergen, write "OK CLIENT" on the order.' },
+      { id:'p21', title:'Política de comida para llevar', title_en:'Takeaway policy', body:'No está permitido pedir postres para llevar. Solo se pueden llevar restos de comida ya consumida parcialmente.', body_en:'Desserts may not be taken away. Only partially consumed food may be taken.' },
+      { id:'p22', title:'Food Waiver para llevar', title_en:'Food Waiver for takeaway', body:'Si el huésped desea llevarse restos, debe firmar el documento Food Waiver disponible en la recepción de la Hostess.', body_en:'If the guest wishes to take leftovers, they must sign the Food Waiver document available at the Hostess reception.' },
+      { id:'p23', title:'Gestión de Under 4', title_en:'Under 4 management', body:'Cuando una habitación tenga régimen Full Board o Half Board, los Under 4 deben abrirse en una cuenta separada usando el número de habitación seguido de la letra U.', body_en:'When a room is on Full or Half Board, Under 4 must be opened on a separate account using the room number followed by the letter U.' },
+      { id:'p24', title:'Abreviatura NP en facturación', title_en:'NP abbreviation in billing', body:'La única abreviatura permitida es NP (No Post). No se permiten variantes como NC, N.C. o n/c.', body_en:'The only permitted abbreviation is NP (No Post). Variants such as NC, N.C. or n/c are not allowed.' },
+      { id:'p25', title:'Anotaciones de mesa en el sistema', title_en:'Table annotations in the system', body:'Para identificar el tipo de mesa usar: CI (Check-In), CO (Check-Out) y TZ (Terraza) al final del número de mesa.', body_en:'To identify table type use: CI (Check-In), CO (Check-Out) and TZ (Terraza/Terrace) at the end of the table number.' },
+    ]
+  }
+];
+
+// Get all rules flat
+
+// ── RENDER PROTOCOLO MAIN ──
+let protocoloView = 'menu'; // 'menu' | 'section' | 'flashcards' | 'exam'
+let protocoloSection = null;
+let protocoloFcIndex = 0;
+let protocoloFcDishes = [];
+let protocoloFcFlipped = false;
+let protocoloExamState = null;
+
+
+
+// ── PROTOCOLO FLASHCARDS ──
+
+
+
+
+// ── PROTOCOLO EXAM ──
+
+
+
+
+
+
+
+
+
+// ═══ CASOS PRÁCTICOS DE PROTOCOLO ═══
+const CASOS_PRACTICOS = [
+  // ── SERVICIO ──
+  { id:'c1', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente pide el chuletón. ¿Qué haces antes de comandarlo?',
+    situation_en: 'A guest orders the chuletón. What do you do before ordering it?',
+    correct: 'Muestro los puntos de cocción, confirmo el punto elegido con el cliente y comando la carne indicando el punto exacto.',
+    correct_en: 'Show the cooking levels, confirm the chosen point with the guest and order the meat indicating the exact point.',
+    traps: [
+      'Comando directamente "chuletón al punto" sin preguntar al cliente.',
+      'Pregunto al cliente el punto solo si es la primera vez que viene.',
+      'Muestro los puntos de cocción pero espero a que el cliente me diga algo.'
+    ],
+    traps_en: [
+      'Order directly "chuletón medium" without asking the guest.',
+      'Ask the guest about doneness only if it is their first visit.',
+      'Show the cooking levels but wait for the guest to say something.'
+    ]
+  },
+  { id:'c2', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente acaba de recibir su carne en la mesa. ¿Qué debes hacer inmediatamente?',
+    situation_en: 'A guest has just received their meat at the table. What must you do immediately?',
+    correct: 'Ofrecer sal y pimienta al cliente sin esperar a que lo pida.',
+    correct_en: 'Offer salt and pepper to the guest without waiting to be asked.',
+    traps: [
+      'Esperar a que el cliente pida sal o pimienta si lo necesita.',
+      'Preguntar al cliente si desea algo más antes de ofrecer sal y pimienta.',
+      'Ofrecer sal y pimienta solo si el cliente parece que va a necesitarlas.'
+    ],
+    traps_en: [
+      'Wait for the guest to ask for salt or pepper if needed.',
+      'Ask the guest if they need anything else before offering salt and pepper.',
+      'Offer salt and pepper only if the guest seems to need them.'
+    ]
+  },
+  { id:'c3', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Un cliente lleva 15 minutos con la copa de vino sin tocar. ¿Qué haces?',
+    situation_en: 'A guest has had their wine glass untouched for 15 minutes. What do you do?',
+    correct: 'Pregunto con educación al cliente si desea que retire la copa. Si confirma, la retiro inmediatamente. No se deben dejar copas vacías ni bebidas que el cliente ya no consume.',
+    correct_en: 'Politely ask the guest if they would like the glass removed. If they confirm, remove it immediately. Empty glasses or unwanted drinks must not remain on the table.',
+    traps: [
+      'Espero a que el cliente termine la mesa y retiro la copa al final.',
+      'Espero a que el cliente termine la mesa para retirar la copa.',
+      'Dejo la copa hasta el final del servicio para no interrumpir al cliente.'
+    ],
+    traps_en: [
+      'Ask the guest if they want me to remove the glass before touching it.',
+      'Wait until the end of the meal to remove the glass.',
+      'Leave the glass until the end of service to avoid interrupting the guest.'
+    ]
+  },
+  { id:'c4', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'La mesa quiere pedir ahora los entrantes y luego decidir los principales. ¿Qué haces?',
+    situation_en: 'The table wants to order starters now and decide on mains later. What do you do?',
+    correct: 'Informo que las comandas deben realizarse completas de una sola vez, y que si insisten, la espera entre pasos será de aproximadamente 40 minutos.',
+    correct_en: 'Inform that orders must be taken all at once, and that if they insist, the wait between courses will be approximately 40 minutes.',
+    traps: [
+      'Acepto la comanda parcial y vuelvo cuando terminen los entrantes.',
+      'Tomo solo los entrantes y aviso a cocina que habrá más tarde.',
+      'Pregunto al supervisor si puedo aceptar la comanda por partes.'
+    ],
+    traps_en: [
+      'Accept the partial order and return when they finish the starters.',
+      'Take only the starters and inform the kitchen there will be more later.',
+      'Ask the supervisor if I can accept a partial order.'
+    ]
+  },
+  { id:'c5', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Va a llegar el primer plato a una mesa y el marcaje no está listo. ¿Qué haces?',
+    situation_en: 'The first dish is about to arrive at a table and the cutlery is not set. What do you do?',
+    correct: 'No permito que el plato llegue a la mesa. La mesa debe estar correctamente marcada antes de que llegue cualquier plato.',
+    correct_en: 'Do not allow the dish to arrive at the table. The table must be correctly set before any dish arrives.',
+    traps: [
+      'Dejo que salga el plato y marco rápido mientras el cliente empieza.',
+      'Aviso a cocina que espere y marco la mesa en menos de 1 minuto.',
+      'Llevo el plato yo mismo para no perder tiempo.'
+    ],
+    traps_en: [
+      'Let the dish come out and set quickly while the guest starts.',
+      'Tell the kitchen to wait and set the table in under 1 minute.',
+      'Bring the dish myself to save time.'
+    ]
+  },
+  { id:'c6', section:'servicio', color:'#7095c8', icon:'🤵',
+    situation: 'Sale la salsa de hongos como acompañamiento de un plato principal. ¿Con qué cubierto debe salir?',
+    situation_en: 'A mushroom sauce comes out as an accompaniment to a main dish. What utensil must accompany it?',
+    correct: 'Siempre con cuchara. Todas las guarniciones y salsas deben salir con cuchara según el Plating Guide.',
+    correct_en: 'Always with a spoon. All sides and sauces must come with a spoon according to the Plating Guide.',
+    traps: [
+      'Sin cubierto específico, el cliente usa el que tenga en mesa.',
+      'Con tenedor de trinchar, igual que el plato principal.',
+      'Depende de la consistencia de la salsa.'
+    ],
+    traps_en: [
+      'No specific utensil, the guest uses whatever is on the table.',
+      'With a carving fork, same as the main dish.',
+      'Depends on the consistency of the sauce.'
+    ]
+  },
+  // ── COMANDAS ──
+  { id:'c7', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'Recibes el papel de la Hostess con una mesa nueva. ¿Qué verificas antes de acercarte?',
+    situation_en: 'You receive the Hostess paper for a new table. What do you check before approaching?',
+    correct: 'Verifico número de habitación, nombre del huésped, alergias o restricciones alimentarias y si está identificado como VIP o Special Guest.',
+    correct_en: 'I check the room number, guest name, allergies or dietary restrictions and whether they are identified as VIP or Special Guest.',
+    traps: [
+      'Solo verifico el número de mesa y el número de comensales.',
+      'Verifico solo si es VIP o Special Guest, los demás datos los pregunto en mesa.',
+      'No hace falta verificar el papel, la Hostess ya me lo ha explicado.'
+    ],
+    traps_en: [
+      'Only check the table number and number of guests.',
+      'Check the guest name and VIP status, ask the rest at the table.',
+      'No need to check the paper, the Hostess has already explained it.'
+    ]
+  },
+  { id:'c8', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'La mesa está identificada como VIP. ¿Qué es lo primero que haces al recibirles?',
+    situation_en: 'The table is identified as VIP. What is the first thing you do when receiving them?',
+    correct: 'Pido inmediatamente el aperitivo VIP correspondiente para adultos o niños, sin esperar a que lo soliciten.',
+    correct_en: 'Immediately request the corresponding VIP welcome drink for adults or children, without waiting for them to ask.',
+    traps: [
+      'Pregunto al huésped si desea el aperitivo de bienvenida.',
+      'Espero a que estén sentados y cómodos antes de ofrecer el aperitivo.',
+      'Notifico al manager y espero sus instrucciones.'
+    ],
+    traps_en: [
+      'Ask the guest if they would like the welcome drink.',
+      'Wait until they are seated and comfortable before offering the aperitif.',
+      'Notify the manager and wait for their instructions.'
+    ]
+  },
+  { id:'c9', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'Han pasado 5 minutos y la mesa 14 sigue sin abrirse en el sistema. Estás ocupado. ¿Qué haces?',
+    situation_en: 'Five minutes have passed and table 14 is still not open in the system. You are busy. What do you do?',
+    correct: 'Pido ayuda a un compañero, supervisor o manager para que abran la mesa. El límite es 3 minutos.',
+    correct_en: 'Ask a colleague, supervisor or manager to open the table. The limit is 3 minutes.',
+    traps: [
+      'Termino lo que estoy haciendo y abro la mesa cuando pueda.',
+      'Aviso al manager solo si han pasado más de 10 minutos.',
+      'Tomo la comanda verbalmente y la introduzco después.'
+    ],
+    traps_en: [
+      'Finish what I am doing and open the table when I can.',
+      'Only notify the manager if more than 10 minutes have passed.',
+      'Take the order verbally and enter it later.'
+    ]
+  },
+  { id:'c10', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'Un cliente en cena pide una piña colada que no está en la carta de vinos. ¿Qué le dices?',
+    situation_en: 'A guest at dinner orders a piña colada not listed on the wine menu. What do you say?',
+    correct: 'Le informo que durante la cena solo se pueden ofrecer los cócteles presentes en la carta de vinos. Queda prohibida la coctelería fuera de carta.',
+    correct_en: 'I inform the guest that during dinner only cocktails listed on the wine menu can be offered. Off-menu cocktails are not permitted.',
+    traps: [
+      'Consulto con el barman si puede prepararlo como excepción.',
+      'Lo preparo si tenemos los ingredientes disponibles.',
+      'Pregunto al supervisor antes de negarme.'
+    ],
+    traps_en: [
+      'Check with the barman if they can make it as an exception.',
+      'Prepare it if we have the ingredients available.',
+      'Ask the supervisor before refusing.'
+    ]
+  },
+  { id:'c11', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'Durante el servicio ves que queda una sola bandeja de pan o uno o dos panes para cortar. ¿Qué haces?',
+    situation_en: 'During service you notice only one bread tray or one or two loaves left to cut. What do you do?',
+    correct: 'Pido inmediatamente más pan a cocina. No espero a que se acabe del todo.',
+    correct_en: 'Request more bread from the kitchen immediately. Do not wait until it runs out completely.',
+    traps: [
+      'Espero a que quede la última pieza antes de pedir más.',
+      'Aviso al jefe de sala para que decida si pedir más pan.',
+      'Reduzco las porciones de pan por cliente para que alcance.'
+    ],
+    traps_en: [
+      'Wait until the last piece before requesting more.',
+      'Notify the head waiter to decide whether to order more bread.',
+      'Reduce bread portions per guest to make it last.'
+    ]
+  },
+  { id:'c12', section:'comandas', color:'#c8a96e', icon:'📝',
+    situation: 'Comandas una botella de Rioja para una mesa. ¿Qué información debes incluir?',
+    situation_en: 'You are ordering a bottle of Rioja for a table. What information must you include?',
+    correct: 'Indico para cuántas personas es el vino y el número de copas asignadas a la mesa.',
+    correct_en: 'I indicate how many guests the wine is for and the number of glasses assigned to the table.',
+    traps: [
+      'Solo indico el nombre del vino y la mesa.',
+      'Indico el vino, la mesa y si es para toda la mesa o solo algunos.',
+      'El vino no necesita información extra, solo el nombre y la referencia.'
+    ],
+    traps_en: [
+      'Only indicate the wine name and table number.',
+      'Indicate the wine, table and whether it is for all or some guests.',
+      'Wine does not need extra information, just the name and reference.'
+    ]
+  },
+  // ── SISTEMA ──
+  { id:'c13', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Un huésped declara alergia al gluten pero insiste en comer el pan de masa madre. ¿Cómo lo registras?',
+    situation_en: 'A guest declares a gluten allergy but insists on eating the sourdough bread. How do you record it?',
+    correct: 'Informo al cliente del riesgo que supone consumir ese alimento con su alergia declarada. Si aun así insiste, escribo "OK CLIENTE" en la comanda. El consumo queda bajo su responsabilidad.',
+    correct_en: 'I inform the guest of the risk of consuming that food given their declared allergy. If they still insist, I write “OK CLIENT” on the order. Consumption is at their own risk.',
+    traps: [
+      'Sirvo el pan sin informar al cliente del riesgo ya que es su decisión.',
+      'Sirvo el pan sin anotar nada ya que es decisión del cliente.',
+      'Llamo al manager para que autorice el servicio antes de proceder.'
+    ],
+    traps_en: [
+      'Do not serve the bread under any circumstances even if the guest insists.',
+      'Serve the bread without noting anything since it is the guest’s choice.',
+      'Call the manager to authorise the service before proceeding.'
+    ]
+  },
+  { id:'c14', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Un huésped quiere llevarse los restos de su lubina a la habitación. ¿Qué haces?',
+    situation_en: 'A guest wants to take their leftover sea bass back to their room. What do you do?',
+    correct: 'Le pido que firme el Food Waiver disponible en recepción de la Hostess. Los postres no se pueden llevar, solo restos de comida parcialmente consumida.',
+    correct_en: 'Ask them to sign the Food Waiver available at the Hostess reception. Desserts cannot be taken away, only partially consumed food.',
+    traps: [
+      'Le preparo un táper y se lo entrego directamente sin más trámites.',
+      'Le informo que no está permitido llevarse comida del restaurante.',
+      'Consulto con el manager si en este caso se puede hacer una excepción.'
+    ],
+    traps_en: [
+      'Prepare a container and hand it to them directly without any formalities.',
+      'Inform them that taking food from the restaurant is not permitted.',
+      'Check with the manager if an exception can be made in this case.'
+    ]
+  },
+  { id:'c15', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'La habitación 305 tiene régimen Half Board con dos niños menores de 4 años. ¿Cómo abres la cuenta?',
+    situation_en: 'Room 305 is on Half Board with two children under 4. How do you open the account?',
+    correct: 'Abro una cuenta separada usando 305U. Los Under 4 siempre van en cuenta separada con el número de habitación seguido de la letra U.',
+    correct_en: 'Open a separate account using 305U. Under 4 always go on a separate account using the room number followed by the letter U.',
+    traps: [
+      'Lo incluyo todo en la cuenta 305 ya que están en la misma habitación.',
+      'Abro la cuenta 305N para los niños.',
+      'Pregunto a recepción cómo gestionar los Under 4 en este caso.'
+    ],
+    traps_en: [
+      'Include everything on account 305 since they are in the same room.',
+      'Open account 305N for the children.',
+      'Ask reception how to handle Under 4 in this case.'
+    ]
+  },
+  { id:'c16', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Al abrir una mesa, el huésped no tiene crédito en su habitación. ¿Cómo debes anotarlo en el sistema?',
+    situation_en: 'When opening a table, the guest has no credit on their room. How must you note this in the system?',
+    correct: 'Anoto NP (No Post) en el sistema. Es la única abreviatura permitida. No se admiten NC, N.C. ni n/c.',
+    correct_en: 'I note NP (No Post) in the system. It is the only permitted abbreviation. NC, N.C. and n/c are not accepted.',
+    traps: [
+      'Anoto NC, que significa No Cargo, y es equivalente a NP.',
+      'Lo anoto verbalmente con el supervisor y no hace falta registrarlo en el sistema.',
+      'Cualquier abreviatura es válida siempre que quede claro el significado.'
+    ],
+    traps_en: [
+      'Note NC, meaning No Charge, which is equivalent to NP.',
+      'Note it verbally with the supervisor — no need to record it in the system.',
+      'Any abbreviation is valid as long as the meaning is clear.'
+    ]
+  },
+  { id:'c17', section:'sistema', color:'#6bab82', icon:'💻',
+    situation: 'Un cliente declara alergia al marisco y a los moluscos. Pide el arroz negro con txipirones. ¿Qué haces?',
+    situation_en: 'A guest declares an allergy to shellfish and molluscs. They order the black rice with squid. What do you do?',
+    correct: 'El txipiron es un molusco — el plato no es apto. Informo al cliente y le ofrezco alternativas. Si quisiera tomarlo igualmente, anoto ambas alergias en cada plato y modificación con "OK CLIENTE".',
+    correct_en: 'The txipiron is a mollusc — the dish is not suitable. I inform the guest and offer alternatives. If they still want it, I note both allergies on every dish and modification with “OK CLIENT”.',
+    traps: [
+      'Anoto la alergia solo en el primer plato y aviso verbalmente a cocina.',
+      'Sirvo el plato sin informar al cliente ya que el txipiron no es marisco sino molusco.',
+      'Anoto la alergia una sola vez al inicio de la comanda.'
+    ],
+    traps_en: [
+      'Note the allergy only on the first dish and inform the kitchen verbally.',
+      'Tell the guest that dish contains shellfish and offer alternatives.',
+      'Note the allergy once at the beginning of the order.'
+    ]
+  },
+  // ── 3 PASOS ──
+  { id:'c18', section:'pasos', color:'#c8a96e', icon:'🌟',
+    situation: 'Es el primer contacto con el huésped al llegar a la mesa. ¿Cuál es el Paso 1?',
+    situation_en: 'It is the first contact with the guest upon arrival at the table. What is Step 1?',
+    correct: 'Dar una cordial y sincera bienvenida utilizando el nombre del huésped.',
+    correct_en: 'Give a warm and sincere greeting using the guest name.',
+    traps: [
+      'Presentarme y explicar el menú del día.',
+      'Ofrecer el aperitivo VIP si la mesa está marcada como tal.',
+      'Verificar el número de comensales antes de saludar.'
+    ],
+    traps_en: [
+      'Introduce myself and explain the daily menu.',
+      'Offer the VIP aperitif if the table is marked as such.',
+      'Check the number of guests before greeting.'
+    ]
+  },
+  { id:'c19', section:'pasos', color:'#c8a96e', icon:'🌟',
+    situation: 'Un huésped lleva 10 minutos sentado en la mesa y aún no tiene agua. ¿Qué haces?',
+    situation_en: 'A guest has been seated for 10 minutes and still has no water. What do you do?',
+    correct: 'Me disculpo por el retraso y le sirvo el agua inmediatamente. Aplico el Paso 2: anticiparse y satisfacer las necesidades de cada huésped, incluyendo las no expresadas.',
+    correct_en: 'I apologise for the delay and serve the water immediately. This is Step 2: anticipate and fulfil the needs of each guest, including unexpressed ones.',
+    traps: [
+      'Espero a que el huésped pida el agua antes de servirla.',
+      'Le sirvo el agua sin disculparme para no llamar la atención sobre el error.',
+      'Aviso al supervisor del retraso antes de actuar.'
+    ],
+    traps_en: [
+      'Wait for the guest to ask for water before serving it.',
+      'Serve the water without apologising to avoid drawing attention to the mistake.',
+      'Notify the supervisor of the delay before acting.'
+    ]
+  },
+  // ── VALORES ──
+  { id:'c20', section:'valores', color:'#ab88c8', icon:'💎',
+    situation: 'Una mesa tiene un problema con su plato. El cocinero no está disponible y tu supervisor tampoco. ¿Qué dice el Valor 6?',
+    situation_en: 'A table has a problem with their dish. The chef and your supervisor are unavailable. What does Value 6 say?',
+    correct: 'Me responsabilizo y resuelvo inmediatamente cualquier incidente con nuestros huéspedes, sin esperar a que otro lo gestione.',
+    correct_en: 'I own and immediately resolve guest problems, without waiting for someone else to handle it.',
+    traps: [
+      'Espero a que el supervisor esté disponible para tomar la decisión correcta.',
+      'Anoto el incidente y lo comunico al manager al final del servicio.',
+      'Ofrezco disculpas al cliente y le digo que lo gestionará el manager.'
+    ],
+    traps_en: [
+      'Wait until the supervisor is available to make the right decision.',
+      'Note the incident and report it to the manager at the end of service.',
+      'Apologise to the guest and tell them the manager will handle it.'
+    ]
+  }
+];
+
+
+
+
+
+// ═══ TEST DE ALÉRGENOS (generado dinámicamente) ═══
+
+const ALLERGEN_ES_TO_EN = {
+  'Gluten': 'Gluten', 'Huevos': 'Eggs', 'Lácteos': 'Dairy',
+  'Moluscos': 'Molluscs', 'Crustáceos': 'Crustaceans', 'Pescado': 'Fish',
+  'Frutos de cáscara': 'Nuts', 'Mostaza': 'Mustard', 'Soja': 'Soy',
+  'Apio': 'Celery', 'Sulfitos': 'Sulphites', 'Cacahuete': 'Peanuts',
+  'Sésamo': 'Sesame', 'Altramuces': 'Lupin'
+};
+
+const ALLERGEN_EN_TO_ES = Object.fromEntries(
+  Object.entries(ALLERGEN_ES_TO_EN).map(([k,v]) => [v,k])
+);
+
+
+
+let allergenTestState = null;
+
+
+
+
+
+
+function renderCredo() {
   const c = document.getElementById('appContent');
-  c.innerHTML = `<div class="sup-wrap">
-    <div class="sup-hero">
-      <div class="sup-hero-icon">🗑️</div>
-      <div class="sup-hero-title">${LANG==='en'?'Delete Profile':'Eliminar Perfil'}</div>
-      <div class="sup-hero-sub">${LANG==='en'?'Select an employee to delete':'Selecciona un empleado para eliminar'}</div>
-    </div>
-    <div style="background:rgba(168,64,64,.08);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:1rem;font-size:.72rem;color:var(--rose);font-family:'DM Mono',monospace">
-      ⚠️ ${LANG==='en'?'This action is permanent and cannot be undone.':'Esta acción es permanente y no se puede deshacer.'}
-    </div>
-    ${empNames.map(n => `
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:#fff;border:1px solid var(--line);border-radius:var(--r2);margin-bottom:.45rem">
-        <div style="width:34px;height:34px;border-radius:50%;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.9rem;color:var(--gold);flex-shrink:0">${n[0].toUpperCase()}</div>
-        <div style="flex:1;font-size:.85rem;color:var(--parchment)">${n}</div>
-        <button onclick="supDeleteConfirm('${n}')" style="background:transparent;border:1px solid rgba(168,64,64,.4);border-radius:var(--r2);padding:.35rem .7rem;font-family:'Jost',sans-serif;font-size:.72rem;color:var(--rose);cursor:pointer">
-          ${LANG==='en'?'Delete':'Eliminar'}
-        </button>
-      </div>`).join('')}
-    <button onclick="renderSupDashboard()" class="btn-secondary" style="width:100%;margin-top:.75rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
-  </div>`;
+
+  // SVG: stylised crown + lion silhouette inspired by Ritz-Carlton symbolism
+  const crownSVG = `<svg viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Crown base -->
+    <rect x="30" y="72" width="100" height="14" rx="3" fill="none" stroke="#5b8db8" stroke-width="1.5" opacity=".9"/>
+    <!-- Crown body -->
+    <path d="M30 72 L30 48 L52 60 L80 30 L108 60 L130 48 L130 72 Z" fill="none" stroke="#5b8db8" stroke-width="1.5" stroke-linejoin="round" opacity=".9"/>
+    <!-- Crown jewels -->
+    <circle cx="80" cy="44" r="4" fill="#5b8db8" opacity=".7"/>
+    <circle cx="52" cy="63" r="3" fill="#5b8db8" opacity=".5"/>
+    <circle cx="108" cy="63" r="3" fill="#5b8db8" opacity=".5"/>
+    <!-- Crown top points -->
+    <circle cx="80" cy="28" r="3.5" fill="none" stroke="#5b8db8" stroke-width="1.2" opacity=".8"/>
+    <circle cx="30" cy="46" r="2.5" fill="none" stroke="#5b8db8" stroke-width="1.2" opacity=".6"/>
+    <circle cx="130" cy="46" r="2.5" fill="none" stroke="#5b8db8" stroke-width="1.2" opacity=".6"/>
+    <!-- Subtle inner glow line -->
+    <path d="M38 72 L38 54 L56 64 L80 38 L104 64 L122 54 L122 72" stroke="#5b8db8" stroke-width=".4" opacity=".25" stroke-linejoin="round"/>
+    <!-- Base decorative line -->
+    <line x1="20" y1="90" x2="140" y2="90" stroke="#5b8db8" stroke-width=".8" opacity=".3"/>
+    <line x1="10" y1="94" x2="150" y2="94" stroke="#5b8db8" stroke-width=".4" opacity=".15"/>
+  </svg>`;
+
+  c.innerHTML = `
+    <div style="background:linear-gradient(175deg,#f8f5f0 0%,#f2eae0 50%,#ede5d8 100%);min-height:100vh;padding:2rem 1.5rem 4rem;position:relative;overflow:hidden">
+
+      <!-- Subtle background texture -->
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(91,141,184,.06) 0%,transparent 60%);pointer-events:none"></div>
+
+      <!-- Back button -->
+      <button onclick="renderProtocolo()" style="background:transparent;border:1px solid rgba(91,141,184,.25);border-radius:var(--r2);padding:.4rem .8rem;font-size:.72rem;color:rgba(91,141,184,.7);cursor:pointer;margin-bottom:1.5rem;font-family:'DM Mono',monospace;letter-spacing:.08em">← ${LANG==='en'?'Back':'Volver'}</button>
+
+      <!-- Header with crown symbol -->
+      <div style="text-align:center;margin-bottom:2.5rem">
+        <div style="width:100px;margin:0 auto .75rem">${crownSVG}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.3em;color:#5b8db8;text-transform:uppercase;margin-bottom:.6rem;opacity:.8">The Ritz-Carlton</div>
+        <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:400;color:#1a3a5c;letter-spacing:.06em;line-height:1.1">
+          ${LANG==='en'?'The Credo':'El Credo'}
+        </div>
+        <div style="width:50px;height:1px;background:linear-gradient(90deg,transparent,#5b8db8,transparent);margin:.9rem auto;opacity:.4"></div>
+        <div style="font-family:'Jost',sans-serif;font-size:.75rem;color:#5b8db8;letter-spacing:.12em;text-transform:uppercase;font-weight:300;opacity:.8">
+          ${LANG==='en'?'I am proud to be The Ritz-Carlton':'Estoy orgulloso de ser The Ritz-Carlton'}
+        </div>
+      </div>
+
+      <!-- 3 Pasos del Servicio -->
+      <div style="margin-bottom:2.5rem">
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(91,141,184,.3))"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.2em;color:#5b8db8;text-transform:uppercase;white-space:nowrap;opacity:.8">${LANG==='en'?'Three Steps of Service':'Tres Pasos de Servicio'}</div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(91,141,184,.3),transparent)"></div>
+        </div>
+        ${[
+          { n:'1', es:'Dar una cordial y sincera bienvenida utilizando el nombre del huésped.', en:'Give a warm and sincere greeting using the guest name.' },
+          { n:'2', es:'Anticiparse y satisfacer las necesidades de cada huésped.', en:'Anticipate and fulfil the needs of each guest.' },
+          { n:'3', es:'Dar una cordial y afectuosa despedida utilizando el nombre del huésped.', en:'Give a fond farewell using the guest name.' }
+        ].map(s => `
+          <div style="display:flex;align-items:flex-start;gap:1rem;padding:.85rem 0;border-bottom:1px solid rgba(91,141,184,.1)">
+            <div style="width:28px;height:28px;border-radius:50%;border:1.5px solid #5b8db8;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Playfair Display',serif;font-size:.85rem;color:#1a3a5c;margin-top:.1rem;background:rgba(91,141,184,.08)">${s.n}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:.9rem;color:#2c3e50;line-height:1.6;font-weight:300">${LANG==='en'?s.en:s.es}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- 12 Valores -->
+      <div>
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(91,141,184,.3))"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.2em;color:#5b8db8;text-transform:uppercase;white-space:nowrap;opacity:.8">${LANG==='en'?'Service Values':'Valores de Servicio'}</div>
+          <div style="flex:1;height:1px;background:linear-gradient(90deg,rgba(91,141,184,.3),transparent)"></div>
+        </div>
+        ${[
+          { n:'1',  es:'Establezco relaciones sólidas fidelizando huéspedes Ritz-Carlton para toda la vida.', en:'I build strong relationships and create Ritz-Carlton guests for life.' },
+          { n:'2',  es:'Soy responsable de satisfacer los deseos y las necesidades expresadas y no expresadas de nuestros huéspedes.', en:'I am always responsive to the expressed and unexpressed wishes and needs of our guests.' },
+          { n:'3',  es:'Estoy cualificado para tomar decisiones y crear experiencias únicas, memorables y personales para nuestros huéspedes.', en:'I am empowered to create unique, memorable and personal experiences for our guests.' },
+          { n:'4',  es:'Asumo mi rol para lograr los factores claves del éxito contribuyendo en el programa Community Footprints y creando la Mística The Ritz-Carlton.', en:'I understand my role in achieving the Key Success Factors, embracing Community Footprints and creating the Ritz-Carlton Mystique.' },
+          { n:'5',  es:'Continuamente busco oportunidades de innovar y mejorar la experiencia The Ritz-Carlton.', en:'I continuously seek opportunities to innovate and improve The Ritz-Carlton experience.' },
+          { n:'6',  es:'Me responsabilizo y resuelvo inmediatamente cualquier incidente con nuestros huéspedes.', en:'I own and immediately resolve guest problems.' },
+          { n:'7',  es:'Fomento un entorno laboral basado en el trabajo en equipo y el servicio lateral, donde se satisfacen las necesidades de nuestros huéspedes y de todos los empleados.', en:'I create a work environment of teamwork and lateral service so that the needs of our guests and each other are met.' },
+          { n:'8',  es:'Tengo la oportunidad de aprender continuamente y desarrollarme profesionalmente.', en:'I have the opportunity to continuously learn and grow.' },
+          { n:'9',  es:'Estoy involucrado en la planificación del trabajo que me afecta.', en:'I am involved in the planning of the work that affects me.' },
+          { n:'10', es:'Estoy orgulloso de mi imagen, expresión y comportamientos profesionales.', en:'I am proud of my professional appearance, language and behavior.' },
+          { n:'11', es:'Protejo la intimidad y la seguridad, la información confidencial y los bienes de nuestros huéspedes, de los empleados y de la empresa.', en:'I protect the privacy and security of our guests, my fellow employees and the company\u2019s confidential information and assets.' },
+          { n:'12', es:'Soy responsable de lograr unos niveles de limpieza absolutos y de crear un entorno seguro.', en:'I am responsible for uncompromising levels of cleanliness and creating a safe and accident-free environment.' }
+        ].map(v => `
+          <div style="display:flex;align-items:flex-start;gap:1rem;padding:.8rem 0;border-bottom:1px solid rgba(91,141,184,.07)">
+            <div style="width:22px;text-align:center;flex-shrink:0;font-family:'DM Mono',monospace;font-size:.62rem;color:#5b8db8;margin-top:.25rem;opacity:.7">${v.n}</div>
+            <div style="font-family:'Jost',sans-serif;font-size:.85rem;color:#2c3e50;line-height:1.6;font-weight:300">${LANG==='en'?v.en:v.es}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center;margin-top:2.5rem">
+        <div style="width:30px;height:1px;background:linear-gradient(90deg,transparent,#5b8db8,transparent);margin:0 auto .6rem;opacity:.3"></div>
+        <div style="font-family:'DM Mono',monospace;font-size:.52rem;letter-spacing:.22em;color:#5b8db8;text-transform:uppercase;opacity:.4">The Ritz-Carlton · Abama · Tenerife</div>
+      </div>
+    </div>`;
 }
 
-function supDeleteConfirm(name) {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1.5rem';
-  overlay.innerHTML = `<div style="background:var(--ink2);border:1px solid rgba(168,64,64,.4);border-radius:var(--r);padding:1.5rem;max-width:320px;width:100%;text-align:center">
-    <div style="font-size:2rem;margin-bottom:.5rem">⚠️</div>
-    <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--parchment);margin-bottom:.4rem">${LANG==='en'?'Delete':'Eliminar'} "${name}"?</div>
-    <div style="font-size:.72rem;color:var(--parch3);margin-bottom:1.25rem">${LANG==='en'?'All progress will be permanently lost.':'Todo el progreso se perderá permanentemente.'}</div>
-    <div style="display:flex;gap:.6rem">
-      <button onclick="this.closest('div[style]').remove()" style="flex:1;padding:.6rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parch3);cursor:pointer">${LANG==='en'?'Cancel':'Cancelar'}</button>
-      <button onclick="supDeleteExecute('${name}',this.closest('[style*=fixed]'))" style="flex:1;padding:.6rem;background:var(--rose);border:none;border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;font-weight:600;color:#fff;cursor:pointer">${LANG==='en'?'Delete':'Eliminar'}</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-}
-
-async function supDeleteExecute(name, overlay) {
-  // Delete from local DB
-  if (DB.employees[name]) { delete DB.employees[name]; saveDB(); }
-  // Delete from Supabase
-  try {
-    await fetch(`${SUPA_URL}/rest/v1/employees?name=eq.${encodeURIComponent(name)}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
-    });
-  } catch(e) {}
-  if (overlay) overlay.remove();
-  renderSupDashboard();
-}
 
 // ═══ ANALYTICS ═══
 
@@ -1763,17 +2246,6 @@ let duelState=null;
 
 
 
-function updateNavFade(){
-  const nav = document.getElementById('appNav');
-  const fade = document.getElementById('navFade');
-  if(!nav||!fade) return;
-  const r = nav.getBoundingClientRect();
-  fade.style.top = r.top + 'px';
-  fade.style.height = r.height + 'px';
-  fade.style.right = (window.innerWidth - r.right) + 'px';
-  const atEnd = nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 4;
-  fade.classList.toggle('hidden', atEnd);
-}
 document.addEventListener('DOMContentLoaded', () => {
   const nav = document.getElementById('appNav');
   if(nav){
@@ -1792,68 +2264,13 @@ const AVATAR_OPTIONS = [
   '💎','🏆','⚡','🔥','🌊','🎸','🎭','🎩','🍷','☕'
 ];
 
-function getEmpAvatar(name) {
-  const emp = getEmp(name);
-  return emp.avatar || name[0].toUpperCase();
-}
 
-function renderAvatarDisplay(name, size='28px', fontSize='1rem') {
-  const av = getEmpAvatar(name);
-  const isEmoji = av.length > 1 || av.charCodeAt(0) > 127;
-  if(isEmoji) {
-    return `<div class="avatar-display" style="width:${size};height:${size};font-size:${fontSize}" onclick="openAvatarPicker()">${av}</div>`;
-  }
-  return `<div class="avatar-display" style="width:${size};height:${size};font-size:.8rem" onclick="openAvatarPicker()">${av}</div>`;
-}
 
-function openAvatarPicker() {
-  const current = getEmpAvatar(currentUser);
-  const overlay = document.createElement('div');
-  overlay.className = 'avatar-picker-overlay';
-  overlay.id = 'avatarPickerOverlay';
-  overlay.innerHTML = `
-    <div class="avatar-picker-modal">
-      <div class="avatar-picker-title">Tu avatar</div>
-      <div class="avatar-picker-sub">Elige tu icono</div>
-      <div class="avatar-grid">
-        ${AVATAR_OPTIONS.map(a => `
-          <div class="avatar-opt${a===current?' selected':''}" onclick="selectAvatar('${a}')">${a}</div>
-        `).join('')}
-      </div>
-      <button onclick="document.getElementById('avatarPickerOverlay').remove()"
-        style="width:100%;padding:.55rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer">
-        ${LANG==='en'?'Cancel':'Cancelar'}
-      </button>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
-}
 
-function selectAvatar(emoji) {
-  const emp = getEmp(currentUser);
-  emp.avatar = emoji;
-  saveDB();
-  supaUpsertEmployee(currentUser);
-  // Update header
-  const headerAv = document.getElementById('headerAvatar');
-  if(headerAv) { headerAv.textContent = emoji; headerAv.style.fontSize = '1rem'; }
-  document.getElementById('avatarPickerOverlay')?.remove();
-}
 
 // ═══ SPLASH SCREEN ═══
-function hideSplash() {
-  const splash = document.getElementById('splashScreen');
-  if (!splash) return;
-  splash.classList.add('hiding');
-  setTimeout(() => splash.remove(), 520);
-}
-// Hide splash once fonts and DOM are ready — min 1.2s for elegance
-const _splashStart = Date.now();
-document.addEventListener('DOMContentLoaded', () => {
-  const elapsed = Date.now() - _splashStart;
-  const minDuration = 1400;
-  setTimeout(hideSplash, Math.max(0, minDuration - elapsed));
-});
+// Hide splash after login renders AND leaderboard has had time to load
+
 
 // ═══ SOUNDS ═══
 let soundEnabled=true;
@@ -1864,8 +2281,7 @@ try{ soundEnabled=localStorage.getItem('txoko_sound')!=='off'; }catch(e){}
 const CAT_EMOJIS={'Entrantes':'🥗','Hamburguesas y Bocatas':'🍔','Platos Principales':'🥩',
   'Guarniciones y Salsas':'🫙','Postres':'🍮','Vegetariano':'🥦'};
 
-renderLogin();
-}
+
 
 function applyLangToApp() {
   const lb = document.getElementById('logoutBtn');
@@ -1923,7 +2339,7 @@ const DISHES_EN = [
   {id:41,name:'Tocinillo de cielo',allergens:['Tree nuts','Gluten','Dairy','Eggs'],ingredients:'Eggs, Lemon, Ginger, Cocoa, Coffee, Hazelnuts.',history:'Tocinillo del cielo is a traditional Spanish dessert, very sweet with a smooth and glossy texture, similar to flan but denser. Originally from Andalusia. We have reimagined this recipe by adding other preparations to bring it to the Txoko style.',notes:'Egg yolk cream, lemon and ginger ice cream, chocolate tile, finished with a coffee and hazelnut tile.'},
   {id:42,name:'Hazelnut brownie with cocoa and mandarin cream',allergens:['Tree nuts','Dairy','Eggs'],ingredients:'Egg whites, Hazelnut flour, Dark chocolate, White chocolate cremoso, Chocolate ice cream, Mandarin cream.',history:'This is one of our gluten-free desserts (though we always clarify it may contain traces) as it is made with hazelnut flour.',notes:'⚠️ Gluten-free but may contain TRACES. Hazelnut and chocolate brownie, chocolate ice cream, chocolate tube filled with cocoa and mandarin cremoso. Finished with white chocolate ganache.'},
   {id:43,name:'Gofio mousse with Canarian banana ice cream',allergens:['Tree nuts','Dairy','Eggs','Sulphites','Gluten'],ingredients:'Milk, Banana, Gofio, Egg, Xanthan gum, Cream, Sugar, Maldon salt, Butter, Flour, Apple vinegar, Toasted almonds, Atomised glucose, Osmotised banana, Toffee.',history:null,notes:'Gofio and Canarian banana mousse, with osmotised banana and banana ice cream. Feuilletine, toasted almonds and toffee.'},
-  {id:44,name:'Inverted Basque cake with apple tartare',allergens:[],ingredients:'Flour, Sugar, Butter, Egg, Baking powder, Rum, Salt, Milk, Cornflour, Lemon, Vanilla, Fennel, Cream, Glucose, Cremodan.',history:null,notes:'⏱️ Minimum 30-minute wait (baked to order). Inform the guest when taking the order. Sponge with pastry cream layer and apple tartare. Finished with artisan fennel ice cream.'},
+  {id:44,name:'Inverted Basque cake with apple tartare',allergens:['Gluten','Dairy','Eggs'],ingredients:'Flour, Sugar, Butter, Egg, Baking powder, Rum, Salt, Milk, Cornflour, Lemon, Vanilla, Fennel, Cream, Glucose, Cremodan.',history:null,notes:'⏱️ Minimum 30-minute wait (baked to order). Inform the guest when taking the order. Sponge with pastry cream layer and apple tartare. Finished with artisan fennel ice cream.'},
   {id:45,name:'Dressed tomatoes with gazpacho granita',allergens:['Sulphites'],ingredients:'Tomato, Avocado, Spring onion, Gazpacho granita, Grenadine, Cabernet Sauvignon vinaigrette.',history:'This is our vegetarian version of our iconic tomato, anchovy and tuna belly dish.',notes:'🌱 VEGAN adaptable. Organic tomatoes with pickled spring onions and gazpacho granita (without bread). Finished with watercress shoots.'},
   {id:46,name:'Confit potatoes with mixed vegetables',allergens:['Mustard','Sulphites','Eggs'],ingredients:null,history:'Carpaccio of confit Canarian potato, served with organic island vegetables and dressed with citrus mayonnaise.',notes:'🌱 VEGAN adaptable. Confit potatoes, confit peppers, tomato, green beans, dots of citrus mayo and lemon jam.'},
   {id:48,name:'Beetroot, avocado and sour apple tartare',allergens:['Sulphites'],ingredients:'Beetroot, Avocado, Apple, Green apple sorbet, Pickled radish slices, Beetroot foam.',history:'We use organic beetroots from local producers, which combined with the smooth avocado cream and refreshing green apple sorbet produce a beautifully balanced dish, ideal as a starter.',notes:'⭐ 100% VEGAN. Beetroot and apple tartare with avocado cream, beetroot in textures and green apple sorbet.'},
@@ -1967,7 +2383,7 @@ const DISHES_EN = [
   {id:89,name:'Trifasi club sandwich',allergens:['Gluten','Dairy','Mustard','Sulphites','Eggs'],ingredients:'Brioche: Strong flour, Egg, Yeast, Butter, Sugar, Salt. Chicken thigh. Red mojo: Red pepper, Palmar pepper, Vinegar. Bacon, Cooked ham, Emmental cheese, Fried egg, Lettuce, Tomato. Japanese mayo: Rapeseed oil, Egg, Vinegar, Water, Salt, Sugar, Mustard, Antioxidants, Flavour enhancer',history:'',notes:null},
   {id:90,name:'Lobster Roll',allergens:['Gluten','Dairy','Sulphites','Crustaceans','Eggs'],ingredients:'Brioche bun, Lobster/King prawns, Red cabbage, White cabbage, Carrot, Chives, Mayonnaise, Apple, Apple vinegar. Butter sauce: Butter, Lemon juice. Chives',history:'',notes:'May occasionally be served with King prawns instead of Lobster.'},
   {id:91,name:'Rossini burger',allergens:['Gluten','Dairy','Mustard','Sulphites','Eggs'],ingredients:'180g beef. Brioche: Sourdough, Strong flour, Egg, Yeast, Butter, Sugar, Salt. Truffle cheese, Onion, Pedro Ximénez. Foie gras. Blue cheese dressing: Cream, Blue cheese, Lemon, Wholegrain mustard',history:'',notes:null},
-  {id:92,name:'Black rice with grilled squid',allergens:['Dairy','Sulphites','Celery','Eggs','Molluscs'],ingredients:'Bisque (King prawn stock): White onion, Carrot, Leek, Celery, King prawn, Brandy. Base: Squid, Spring onion, White wine. Bomba rice, Onion, Shallots, Bay leaf, Butter, White wine. Crispy rice. Classic aioli and squid ink aioli',history:'',notes:null},
+  {id:92,name:'Black rice with grilled squid',allergens:['Dairy','Sulphites','Celery','Eggs','Molluscs'],ingredients:'Bisque (King prawn stock): White onion, Carrot, Leek, Celery, King prawn, Brandy. Base: Squid, Spring onion, White wine. Bomba rice, Onion, Shallots, Bay leaf, White wine. Crispy rice. Classic aioli and squid ink aioli',history:'',notes:null},
   {id:93,name:'Lamb with couscous',allergens:['Sesame seeds','Mustard','Peanut','Tree nuts','Celery','Crustaceans','Sulphites','Soy'],ingredients:'Lamb. Marinade: Sunflower oil, Paprika, Cayenne, Garlic, Coriander seeds, Cumin, Oregano, Thyme, Black pepper, Lemon juice, Clove, Star anise. Ras el hanout, Lime. Couscous: Vegetable stock, Salt, Pepper, Almonds, Raisins',history:'',notes:'May contain traces of: Celery, Mustard, Sesame, Nuts, Peanuts, Crustaceans and Sulphites.'},
   {id:94,name:'Black pig belly',allergens:['Dairy','Sulphites','Celery'],ingredients:'Pork belly. Escabeche: Carrot, Apple vinegar, Sugar, Water, Saffron. Veal jus: Meat demi-glace (Contains Celery), Shallots, Thyme, Red wine. Roasted carrot: Carrot, Vinegar, Sugar, Ginger. Avocado green mojo: Coriander, Apple vinegar, Lime, Garlic, Sunflower oil, Olive oil, Spring onion, Espelette pepper, Avocado',history:'Black pig belly rested one week in the Dry-ager, oven-cooked until the skin is perfectly crispy and juicy inside, served on carrot escabeche cream.',notes:null},
   {id:95,name:'Chicken Milanese with red mojo',allergens:['Gluten','Eggs','Dairy','Mustard','Sulphites','Fish'],ingredients:'Chicken breast. Red mojo: Red pepper, Palmar pepper, Vinegar. Breading: Egg, Flour, Breadcrumbs, Panko. Lettuce. Caesar dressing: Egg, Olive oil, Garlic, Anchovies, Dijon mustard, Lemon juice, Parmesan, Worcestershire sauce. Crispy bacon, Crispy Parmesan',history:'',notes:null},
@@ -2005,12 +2421,12 @@ function getDish(d) {
 const DISHES = [
   {id:1,cat:'Entrantes',name:'Croquetas Premium',allergens:['Huevos','Gluten','Lácteos','Crustáceos','Pescado','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Leche, Harina, Mantequilla, Nata, Gelatina, Huevo. Jamón: loncha de jamón. Txipiron: tartar de txipiron. Langostino: americana y tartar de langostino. Dry Age: mermelada de piparra, tartar de Dry y piparra. Boletus: manzana confitada. Pollo: cogollo de lechuga, aderezo césar, lámina de pollo con Demi-glace y crujiente de bacon.',history:'Nacidas del ingenio y el amor por no desperdiciar, las croquetas viajaron desde Francia hasta el alma de España. En cada casa, una receta; en cada bocado, un recuerdo. Crujientes por fuera, suaves por dentro, son el abrazo dorado de la cocina casera, el sabor de la abuela que nunca se olvida. Nuestras croquetas son premium por el Topping que lleva cada una para culminar.',notes:'Sabores disponibles: Jamón, Txipiron, Langostino, Dry Age, Boletus, Pollo'},
   {id:2,cat:'Entrantes',name:'Huevo frito con chistorra',allergens:['Huevos','Lácteos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Papa, Huevo, Nata, Caldo de pollo, Chistorra.',history:'Chistorra de Navarra, uno de los productos de tierra vasca en nuestra carta, acompañada de crema de papa canaria y huevos de caserío, nos dan como resultado un plato redondo en boca por sabor y textura.',notes:'Nuestra versión de los huevos a la estampida: huevo a baja temperatura y frito, espuma de papa, papa paja y chistorra.'},
-  {id:3,cat:'Entrantes',name:'Calamares a la Andaluza',allergens:['Moluscos','Gluten','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Calamar, Harina, Levadura, Agua, Cerveza, Sal, Huevo, Ajo, Limón, Tinta de Txipiron.',history:'Es una reinterpretación de los calamares rebozados, con una tempura súper crujiente y un calamar de textura muy agradable han hecho que este plato se mantenga 8 años en la carta.',notes:'⭐ 8 años en la carta. Calamares en tempura con alioli cítrico y alioli de tinta de calamar.'},
+  {id:3,cat:'Entrantes',name:'Calamares a la Andaluza',allergens:['Moluscos','Gluten','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Calamar, Harina, Levadura, Agua, Cerveza, Sal, Ajo, Limón, Tinta de Txipiron. Alioli cítrico y alioli de tinta de calamar: Huevo, Aceite, Ajo, Limón.',history:'Es una reinterpretación de los calamares rebozados, con una tempura súper crujiente y un calamar de textura muy agradable han hecho que este plato se mantenga 8 años en la carta.',notes:'⭐ 8 años en la carta. Calamares en tempura con alioli cítrico y alioli de tinta de calamar. ⚠️ Huevos en el alioli — puede servirse sin alioli bajo petición.'},
   {id:4,cat:'Entrantes',name:'Tomates aliñados',allergens:['Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ventresca, Anchoas, Tomates, Cebolla roja, Vinagre de Jerez, Granizado de gazpacho, Granadina, Oporto, Vinagreta de Cabernet Sauvignon.',history:'Elaborada con tomates ecológicos de la localidad de Arico, la anchoa y la ventresca resaltan el sabor clásico de la ensalada mediterránea. El clima de la isla nos aporta todo el año tomates muy sabrosos que combinados con el granizado de gazpacho refrescante lo hacen un plato perfecto para intercalar en los entrantes para compartir.',notes:'Tomates ecológicos con ventresca de atún, anchoas, cebolletas encurtidas y granizado de gazpacho. Terminado con brotes de berros.'},
   {id:5,cat:'Entrantes',name:'Pámpano marinado al mojo rojo',allergens:['Frutos de cáscara','Gluten','Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pámpano, Pimiento palmero, Pimiento rojo, Ajo, Huevas de salmón, Huevas de Tobiko, Aguacate, Tabasco, Pan de algas, Naranja confitada, Cilantro, Chips de kale.',history:'Pescado azul de Canarias, de carne grasa y textura inigualable, marinado 24 horas en sal y sabores intensos como el del mojo rojo. Matices como el picante, el fresco del cilantro y el dulce de la naranja logran un equilibrio perfecto. Un clásico de Txoko.',notes:'⭐ Clásico de Txoko. Marinado 24h en mojo rojo. Crema de aguacate picante, naranja confitada, pan de algas, huevas de Tobiko y de salmón, chips de kale.'},
   {id:6,cat:'Entrantes',name:'Peras escalivadas con cremoso de queso de cabra',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pera, Espuma de queso de cabra (Nata, Leche, Queso de cabra, Queso azul), Migas de Ibérico (Ibéricos y miga de pan), Vinagreta de mostaza (Aceite de oliva, Vinagre de manzana, Miel, Mostaza Dijon, Mostaza antigua), Almendras, Brotes de mostaza y mézclum.',history:null,notes:'Peras escalivadas en el josper peladas y cortadas en cuartos. Con vinagreta de mostaza, almendras laminadas tostadas, espuma de queso de cabra y migas de ibérico. Terminamos con brotes de mostaza.'},
   {id:7,cat:'Entrantes',name:'Ensalada Niçoise',allergens:['Mostaza','Sulfitos','Pescado','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tataki de atún, Papa, Lechuga, Tomate, Judías, Pimiento asado, Huevo de Codorniz, Salsa de cítricos, Brotes de mostaza, Miel, Yema de huevo.',history:'Inspirados en dos productos canarios, papa negra y atún, reconvertimos la clásica ensalada francesa en un Carpaccio de papa confitada donde los matices cítricos resaltan el resto de ingredientes. Perfecta para compartir.',notes:'Tataki de atún sobre ensalada de papas confitadas, pimientos confitados, tomate, judías verdes, puntos de mayonesa cítrica y mermelada de limón.'},
-  {id:8,cat:'Entrantes',name:'Vitello tonnato',allergens:['Pescado','Gluten','Lácteos','Huevos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Presa Ibérica, Agua, Azúcar, Limón, Lima, Naranja, Jengibre, Salsa tonnata, Mayonesa, Ventresca de lata, Anchoas, Alcaparra frita, Tabasco, Soja, Pan brioche, Papa paja, Hojas de capuchina, Vinagreta de cabernet.',history:'Aprovechándonos del cerdo ibérico como producto estrella en el recetario español, nos atrevimos con el recetario italiano y reconducimos este clásico de ternera. Con textura refinada por su cocción a baja temperatura, la papa crujiente y el dulce del pan extra suave nos redondean un plato perfecto. Ideal para compartir.',notes:'Presa ibérica marinada en cítricos y marcada al Josper, nubes de pan brioche, salsa tonnata y patata paja.'},
+  {id:8,cat:'Entrantes',name:'Vitello tonnato',allergens:['Pescado','Gluten','Lácteos','Huevos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Presa Ibérica, Agua, Azúcar, Limón, Lima, Naranja, Jengibre, Salsa tonnata, Mayonesa, Ventresca de lata, Anchoas, Alcaparra frita, Tabasco, Pan brioche, Papa paja, Hojas de capuchina, Vinagreta de cabernet.',history:'Aprovechándonos del cerdo ibérico como producto estrella en el recetario español, nos atrevimos con el recetario italiano y reconducimos este clásico de ternera. Con textura refinada por su cocción a baja temperatura, la papa crujiente y el dulce del pan extra suave nos redondean un plato perfecto. Ideal para compartir.',notes:'Presa ibérica marinada en cítricos y marcada al Josper, nubes de pan brioche, salsa tonnata y patata paja.'},
   {id:9,cat:'Entrantes',name:'Tataki de atún (Cena)',allergens:['Huevos','Soja','Pescado','Mostaza','Sulfitos','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Atún, Soja, Mirim, Ajo, Jengibre, Azúcar moreno, Mantequilla, Cebolleta, Nata, Aceite de Oliva, Vinagre de manzana, Miel, Mostaza Dijon, Mostaza antigua, Mayonesa de wasabi, Wakame y daikon.',history:null,notes:'Tataki de atún marinado en Soja, Mirim, Azúcar moreno, Ajo y Jengibre, sobre crema de cebolleta, ensalada de wakame y daikon con vinagreta y puntos de mayonesa de wasabi.'},
   {id:10,cat:'Entrantes',name:'Selección de ostras',allergens:['Pescado','Gluten','Huevos','Crustáceos','Sulfitos','Soja'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Ostras número 2, Perlas de fruta de la pasión, Ponzu, Cebolleta, Panko, Huevo, Wasabi.',history:'Ostras frescas de la Bretaña Francesa de tamaño número 2.',notes:'Selección de 3 ostras frescas: con perlas de fruta de la pasión; Ponzu y cebolleta; Frita en panko con mayonesa de wasabi. Si el huésped lo requiere, se pueden servir con limón y pimienta.'},
   {id:11,cat:'Entrantes',name:'Tabla de embutidos',allergens:['Sulfitos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Jamón ibérico, Salchichón ibérico, Chorizo ibérico, Lomo ibérico, Crujiente de pan y Tomata.',history:'Nuestros embutidos provienen de Casalba que nacen en Burgos, elaborados de forma artesanal, en donde el clima seco y la tradición familiar marcan el ritmo del curado.',notes:'Jamón ibérico, salchichón ibérico, lomo ibérico y chorizo ibérico, acompañado de crujiente de pan y tomate.'},
@@ -2031,7 +2447,7 @@ const DISHES = [
   {id:26,cat:'Platos Principales',name:'Costillas melosas de cordero sobre salsa de curry verde',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Cordero, Cebollas, Puerro, Tomates, Vino tinto, Pimienta y Sal, Demi de jarrete, Vinagre de cabernet, Miel, Azúcar moscovado, Zanahoria, Curry verde, Leche de coco, Caldo de pollo, Naranja, Lima, Limón, Pomelo.',history:null,notes:'⏱️ Cocción de 8 horas. Costillas selladas en el josper, envasadas al vacío con marinada. Servidas con demi glace y salsa de curry verde. Terminamos con gajos de cítricos caramelizados.'},
   {id:27,cat:'Guarniciones y Salsas',name:'Ensalada verde',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchara sopera',ingredients:'Lechuga y cebolla morada.',history:'Lechuga de nuestro proveedor ecológico de Granadilla de Abona.',notes:null},
   {id:28,cat:'Guarniciones y Salsas',name:'Coliflor frita',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Coliflor.',history:null,notes:'Coliflor blanqueada dos minutos en agua sal, luego frita.'},
-  {id:29,cat:'Guarniciones y Salsas',name:'Alcachofas a la brasa',allergens:['Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Alcachofas nacionales.',history:null,notes:'Corazones de alcachofa confitados en aceite de oliva y luego fritos.'},
+  {id:29,cat:'Guarniciones y Salsas',name:'Alcachofas a la brasa',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Alcachofas nacionales.',history:null,notes:'Corazones de alcachofa confitados en aceite de oliva y luego fritos.'},
   {id:30,cat:'Guarniciones y Salsas',name:'Pimientos del padrón',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pimientos del padrón, Pimienta, Sal.',history:'Nuestros pimientos de Padrón son ecológicos y provenientes de Granadilla.',notes:null},
   {id:32,cat:'Guarniciones y Salsas',name:'Patatas cerilla fritas',allergens:['Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Patatas locales, Aceite, Sal.',history:'Nuestras patatas locales provienen de Tacoronte.',notes:'⚠️ Sin alérgenos, pero puede tener contaminación cruzada de gluten. En caso de alergia al gluten avisar a cocina. Servir siempre salsas para los niños (Mayonesa, Kéchup, etc.)'},
   {id:33,cat:'Guarniciones y Salsas',name:'Tomate Cherry al ajillo',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tomates ecológicos, Aceite, Ajo laminado, Guindilla.',history:null,notes:'Tomates ecológicos de la isla fritos en ajillo. ℹ️ Contiene ajo (no es alérgeno oficial UE, pero informar si el cliente lo indica).'},
@@ -2044,7 +2460,7 @@ const DISHES = [
   {id:41,cat:'Postres',name:'Tocinillo de cielo',allergens:['Frutos de cáscara','Gluten','Lácteos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Huevos, Limón, Jengibre, Cacao, Café, Avellanas.',history:'El tocinillo es un postre tradicional español, muy dulce y con una textura suave y brillante, similar al flan pero más denso. Proveniente de Andalucía. Nosotros reversionamos esta receta añadiéndole otras preparaciones para llevarlo al estilo Txoko.',notes:'Crema de yema, helado de limón y jengibre, teja de chocolate, culminado con una teja de café y avellanas.'},
   {id:42,cat:'Postres',name:'Brownie de avellanas con crema de cacao y mandarina',allergens:['Frutos de cáscara','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchara de postre',ingredients:'Claras, Harina de avellanas, Chocolate negro, Cremoso de chocolate blanco, Helado de chocolate, Crema de mandarina.',history:'Este es uno de nuestros postres Gluten-free (aunque siempre aclaramos que puede contener trazas) ya que está hecho a base de harina de avellanas.',notes:'⚠️ Gluten-free pero puede contener TRAZAS. Brownie de avellana y chocolate, helado de chocolate, tubo de chocolate relleno con cremoso de cacao y mandarina. Terminamos con ganache de chocolate blanco.'},
   {id:43,cat:'Postres',name:'Mousse de gofio con helado de plátano canario',allergens:['Frutos de cáscara','Lácteos','Huevos','Sulfitos','Gluten'],cutlery:'Tenedor de postre, Cuchara de postre',ingredients:'Leche, Plátano, Gofio, Huevo, Xantana, Nata, Azúcar, Sal maldon, Mantequilla, Harina, Vinagre de manzana, Almendras tostadas, Glucosa atomizada, Plátano osmotizado, Toffe.',history:null,notes:'Mousse de gofio y plátano canario, con plátano osmotizado y helado del mismo. Feuilletine, almendras tostadas y toffee.'},
-  {id:44,cat:'Postres',name:'Pastel Vasco invertido con tartar de manzana',allergens:[],cutlery:'Tenedor de postre, Cuchillo de postre, Cuchara de postre',ingredients:'Harina, Azúcar, Mantequilla, Huevo, Levadura, Ron, Sal, Leche, Maizena, Limón, Vainilla, Hinojo, Nata, Glucosa, Cremodan.',history:null,notes:'⏱️ Mínimo 30 minutos de espera (recién horneado). Avisar al huésped al tomar la comanda. Bizcocho con capa de crema pastelera y tartar de manzana. Terminamos con helado artesanal de hinojo.'},
+  {id:44,cat:'Postres',name:'Pastel Vasco invertido con tartar de manzana',allergens:['Gluten','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchillo de postre, Cuchara de postre',ingredients:'Harina, Azúcar, Mantequilla, Huevo, Levadura, Ron, Sal, Leche, Maizena, Limón, Vainilla, Hinojo, Nata, Glucosa, Cremodan.',history:null,notes:'⏱️ Mínimo 30 minutos de espera (recién horneado). Avisar al huésped al tomar la comanda. Bizcocho con capa de crema pastelera y tartar de manzana. Terminamos con helado artesanal de hinojo.'},
   {id:45,cat:'Vegetariano',name:'Tomates aliñados con granizado de gazpacho',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Tomate, Aguacate, Cebolleta, Granizado de gazpacho, Granadina, Vinagreta de Cabernet Sauvignon.',history:'Es nuestra versión vegetariana de nuestro plato mítico de tomates, anchoas y ventresca.',notes:'🌱 Versión VEGAN adaptable. Tomates ecológicos con cebolletas encurtidas y granizado de gazpacho (sin pan). Terminado con brotes de berros.'},
   {id:46,cat:'Vegetariano',name:'Patatas confitadas con verduras mixtas',allergens:['Mostaza','Sulfitos','Huevos'],cutlery:'Tenedor trinchero, Cuchara sopera',ingredients:'Papa, Lechuga, Tomate, Judías verdes, Pimiento asado, Huevo de Codorniz, Salsa de cítricos, Brotes de mostaza, Miel, Yema de huevo.',history:'Carpaccio de papa canaria confitada, acompañada de verduras ecológicas de la isla y aliñada con mayonesa cítrica.',notes:'🌱 Versión VEGAN adaptable. Papas confitadas, pimientos confitados, tomate, judías verdes, puntos de mayonesa cítrica y mermelada de limón.'},
   {id:48,cat:'Vegetariano',name:'Tartar de remolacha, aguacate y manzana ácida',allergens:['Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Remolacha, Aguacate, Manzana, Sorbete de manzana verde, Láminas de rabanitos encurtidas, Espuma de remolacha.',history:'Utilizamos remolachas orgánicas de productores locales, que al mezclarse con la suave crema de aguacate y el refrescante sorbete de manzana verde nos deja por resultado un plato súper equilibrado, ideal como entrante.',notes:'⭐ 100% VEGANO. Tartar de remolacha y manzana con cremoso de aguacate, remolacha en texturas y sorbete de manzana verde.'},
@@ -2070,31 +2486,31 @@ const DISHES = [
   {id:71,cat:'Entrantes',name:'Mejillones a la brasa',allergens:['Sulfitos','Moluscos'],cutlery:'Tenedor trinchero, Cuchara sopera, Plato extra para las conchas',ingredients:'Mejillones. Refrito: Ajo, Guindilla, Aceite de oliva, Vinagre de manzana',history:'',notes:null},
   {id:72,cat:'Entrantes',name:'Tomates ecológicos',allergens:['Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Tomate, Anchoas, Boquerones, Aguacate, Cebolleta, Polvo de aceituna calamata, Vinagreta de cabernet, Berro',history:'',notes:null},
   {id:73,cat:'Entrantes',name:'Carpaccio con espuma de parmesano',allergens:['Mostaza','Lácteos','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Picaña, Rúcula, Parmesano, Piparras. Vinagreta: Aceite, Mostaza, Vinagre de jerez, Zumo de limón, Pimienta molida, Sal, Agua de tomate. Espuma: Parmesano rayado, Leche, Nata, Sal, Pimienta. Polvo de aceituna calamata',history:'',notes:null},
-  {id:74,cat:'Entrantes',name:'Rejo de pulpo con papa y mojo verde',allergens:['Sulfitos','Moluscos','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Pulpo, Chalota, Perejil, Mantequilla, Fumet (Caldo de pescado). Mojo verde: Cilantro, Vinagre de manzana, Lima, Ajo, Aceite de girasol, Aceite de oliva, Cebolleta, Pimienta de Espellet. Papa canaria',history:'',notes:'⚠️ Lácteos en la mantequilla — puede prepararse sin mantequilla bajo petición.'},
+  {id:74,cat:'Entrantes',name:'Rejo de pulpo con papa y mojo verde',allergens:['Sulfitos','Moluscos','Lácteos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Pulpo, Chalota, Perejil, Mantequilla, Fumet (Caldo de pescado). Mojo verde: Cilantro, Vinagre de manzana, Lima, Ajo, Aceite de girasol, Aceite de oliva, Cebolleta, Pimienta de Espellet. Papa canaria',history:'',notes:'⚠️ Lácteos en la mantequilla — puede prepararse sin mantequilla bajo petición.'},
   {id:75,cat:'Entrantes',name:'Pollo brasa con huevo a baja temperatura',allergens:['Huevos','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Huevo. Espuma de papa: Papa, Caldo, Nata, Aceite de oliva, Sal. Pollo. Demi glace: Huesos de pollo, Cebolla, Zanahoria, Puerro, Mantequilla. Papa paja',history:'',notes:null},
   {id:76,cat:'Entrantes',name:'Tartar de tomate y queso',allergens:['Huevos','Gluten','Lácteos','Mostaza','Sulfitos','Pescado','Apio'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Tomate, Stracciatella, Tostas de pan carasau. Aliño: Cebolleta, Mostaza savora (apio), Pepinillo, Salsa Perrins, Yema de huevo, Cebollino, Tabasco, Aceite Dauro, Tapenade, Polvo de aceitunas, Polvo de tomate deshidratado, Hojas de capuchina',history:'El tartar de tomate surge de una reinterpretación del clásico tartar de solomillo que sirve Martín desde hace más de 30 años. Aprovechándonos de su aliño, ejecutamos de la misma manera este tartar vegetariano.',notes:'⚠️ Contiene APIO en la mostaza savora. Lácteos (stracciatella) y huevos pueden evitarse bajo petición.'},
   {id:77,cat:'Entrantes',name:'Ensalada de Mero del Hierro',allergens:['Pescado','Mostaza','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Mero, Huevo de codorniz, Naranja. Tomate Tumaka: Tomate rallado, Sal, Aceite de oliva. Cebolla encurtida: Lima, Cayena. Espuma de pil pil: Caldo/Gelatina de pescado, Aceite de oliva, Guindilla. Polvo de aceituna calamata, Brotes de mostaza',history:'',notes:null},
-  {id:78,cat:'Entrantes',name:'Tataki de Atún (Almuerzo)',allergens:['Pescado','Mostaza','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Atún. Rebozado: Harina, Huevo, Panko. Cebollas encurtidas: Granadina (Vinagre de manzana, Granadina), Porto (Vinagre de jerez, Oporto, Agua), Sake (Vinagre de cabernet, Sake, Agua). Huevas de Tobiko, Huevas de aceite. Mermelada de papaya: Papaya, Azúcar, Agua, Pimienta de Jamaica, Guindilla, Aceite de oliva, Vinagre de manzana. Mayonesa de wasabi, Vinagreta de Mostaza antigua y Miel',history:'',notes:null},
+  {id:78,cat:'Entrantes',name:'Tataki de Atún (Almuerzo)',allergens:['Pescado','Mostaza','Huevos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Atún. Rebozado: Harina, Huevo, Panko. Cebollas encurtidas: Granadina (Vinagre de manzana, Granadina), Porto (Vinagre de jerez, Oporto, Agua), Sake (Vinagre de cabernet, Sake, Agua). Huevas de Tobiko, Huevas de aceite. Mermelada de papaya: Papaya, Azúcar, Agua, Pimienta de Jamaica, Guindilla, Aceite de oliva, Vinagre de manzana. Mayonesa de wasabi, Vinagreta de Mostaza antigua y Miel',history:'',notes:null},
   {id:79,cat:'Entrantes',name:'Tartar de solomillo',allergens:['Huevos','Gluten','Pescado','Mostaza','Sulfitos','Apio'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Solomillo vacuno, Pan carasau, Yema de huevo, Salsa Perrins, Tabasco, Mostaza savora (Apio), Aceite de oliva, Cebolleta, Cebollino, Pepinillo, Pimienta',history:'Un clásico de Martín con su receta de más de 30 años haciéndose de la misma manera.',notes:'⭐ Receta de Martín de más de 30 años. ⚠️ Contiene APIO en la mostaza savora. Sin gluten disponible bajo petición (sin pan carasau).'},
   {id:80,cat:'Entrantes',name:'Coca de calabacín',allergens:['Frutos de cáscara','Gluten','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Harina, Agua, Levadura, Sal, Aceite, Calabacín, Queso de cabra, Burrata, Piñones',history:'',notes:'⚠️ Frutos secos en los piñones — puede prepararse sin piñones bajo petición.'},
-  {id:81,cat:'Entrantes',name:'Coca de tomate',allergens:['Frutos de cáscara','Gluten','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Harina, Agua, Levadura, Sal, Aceite. Tomate: Aceto balsámico, Ajo, Azúcar, Romero, Orégano, Tomillo, Aceite de oliva. Jamón ibérico, Queso muzarella',history:'',notes:null},
+  {id:81,cat:'Entrantes',name:'Coca de tomate',allergens:['Frutos de cáscara','Gluten','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Harina, Agua, Levadura, Sal, Aceite. Tomate: Aceto balsámico, Ajo, Azúcar, Romero, Orégano, Tomillo, Aceite de oliva. Jamón ibérico, Queso mozzarella',history:'',notes:null},
   {id:82,cat:'Entrantes',name:'Tabla de quesos canarios',allergens:['Frutos de cáscara','Gluten','Lácteos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Quesos, Gofio, Pimentón, Batata, Azúcar, Agua, Naranja, Vainilla, Canela, Clavo, Tomate, Higos, Aceituna Kalamata, Almendras, Pan.',history:'Tabla de quesos canarios: queso de vaca y oveja 50/50, queso de cabra curado con pimentón, queso de cabra curado con gofio. Acompañados de relish de higos, aceitunas kalamata y almendras, mermelada de tomate y batata de Lanzarote en almíbar de naranja, vainilla, canela y clavo.',notes:'⚠️ Frutos secos en las almendras y gluten en el pan — pueden evitarse bajo petición.'},
   {id:83,cat:'Entrantes',name:'Tabla de embutidos',allergens:['Sulfitos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Jamón ibérico, Salchichón ibérico, Chorizo ibérico, Lomo ibérico, Crujiente de pan, Tomate',history:'Nuestros embutidos provienen de Casalba, que nacen en Burgos, elaborados de forma artesanal, donde el clima seco y la tradición familiar marcan el ritmo del curado.',notes:null},
-  {id:84,cat:'Entrantes',name:'Paletilla Ibérica de bellota',allergens:['Frutos de cáscara','Gluten','Lácteos','Mostaza','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'',history:'',notes:null},
+  {id:84,cat:'Entrantes',name:'Paletilla Ibérica de bellota',allergens:['Gluten','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Paletilla ibérica de bellota',history:'La paletilla ibérica es la pieza obtenida de la extremidad delantera del cerdo ibérico. Es similar al jamón ibérico, pero procede de la pata delantera en lugar de la trasera.',notes:null},
   {id:85,cat:'Entrantes',name:'Cecina de Wagyu Premium',allergens:['Sulfitos','Gluten'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Cecina de Wagyu Premium',history:'Nuestros embutidos provienen de Casalba, que nacen en Burgos, elaborados de forma artesanal, donde el clima seco y la tradición familiar marcan el ritmo del curado.',notes:null},
   // ===== HAMBURGUESAS Y BOCATAS =====
   {id:86,cat:'Hamburguesas y Bocatas',name:'Hamburguesa vegana',allergens:['Gluten','Sulfitos','Soja'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Proteína de soja, Guisantes, Pan de semillas, Cebolla, Panko, Lechuga, Tomate. Chimichurri: Tomate deshidratado, Cebolleta, Pimiento rojo y verde, Ajo, Aceite de oliva, Vinagre de Jerez, Ají, Limón, Perejil, Cebollino, Sal, Pimienta negra',history:'',notes:null},
   {id:87,cat:'Hamburguesas y Bocatas',name:'Bao de brisket',allergens:['Gluten','Lácteos','Mostaza','Apio','Sulfitos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pan Bao: Harina, Levadura, Leche, Aceite, Sal. Brisket (corte de pechuga delantera). Sazonador: Sal, Pimienta negra, Pimentón ahumado, Ajo, Cebolla, Azúcar, Comino, Mostaza Savora (Contiene Apio). Crema agria: Nata, Zumo de limón, Sal. Perejil, Cilantro, Menta, Guindilla roja',history:'',notes:'⚠️ Contiene APIO en la mostaza savora.'},
   {id:88,cat:'Hamburguesas y Bocatas',name:'Focaccia con vegetales asados',allergens:['Gluten','Lácteos','Frutos de cáscara'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Focaccia: Harina, Levadura, Aceite de oliva. Berenjena, Calabacín, Espinaca aliñada, Queso de cabra, Frutos secos, Sal, Pimienta, Aceite de oliva, Menta',history:'',notes:'⚠️ Frutos secos pueden evitarse bajo petición.'},
-  {id:89,cat:'Hamburguesas y Bocatas',name:'Trifasi club',allergens:['Gluten','Lácteos','Mostaza','Sulfitos','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pan brioche: Harina fuerte, Huevo, Levadura, Mantequilla, Azúcar, Sal. Contramuslo de pollo. Mojo rojo: Pimentón rojo, Pimiento palmero, Vinagre. Bacon, Jamón cocido, Queso Emmental, Huevo frito, Lechuga, Tomate. Mayonesa japo: Aceite de colza, Huevo, Vinagre, Agua, Sal, Azúcar, Mostaza, Antioxidantes, Potenciador de sabor',history:'',notes:null},
+  {id:89,cat:'Hamburguesas y Bocatas',name:'Trifasi club',allergens:['Gluten','Lácteos','Mostaza','Sulfitos','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pan brioche: Harina fuerte, Huevo, Levadura, Mantequilla, Azúcar, Sal. Contramuslo de pollo. Mojo rojo: Pimentón rojo, Pimiento palmero, Vinagre. Bacon, Jamón cocido, Queso Emmental, Huevo frito, Lechuga, Tomate. Mayonesa japo (opcional): Aceite de colza, Huevo, Vinagre, Agua, Sal, Azúcar, Mostaza, Antioxidantes, Potenciador de sabor',history:'',notes:'⚠️ Mostaza en la mayonesa japonesa — puede servirse sin ella bajo petición.'},
   {id:90,cat:'Hamburguesas y Bocatas',name:'Lobster Roll',allergens:['Gluten','Lácteos','Sulfitos','Crustáceos','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Pan Brioche, Bogavante/Langostinos, Col morada, Col blanca, Zanahoria, Cebollino, Mayonesa, Manzana, Vinagre de manzana. Salsa de mantequilla: Mantequilla, Zumo de limón. Cebollino',history:'',notes:'En ocasiones puede salir con Langostinos en lugar de Bogavante.'},
   {id:91,cat:'Hamburguesas y Bocatas',name:'Hamburguesa Rossini',allergens:['Gluten','Lácteos','Mostaza','Sulfitos','Huevos'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'180 grs de carne de buey. Pan brioche: Masa madre, Harina fuerte, Huevo, Levadura, Mantequilla, Azúcar, Sal. Queso trufado, Cebolla, Pedro Ximénez. Taco de foie. Aliño de queso azul: Nata, Queso azul, Limón, Mostaza antigua',history:'',notes:'Sin gluten disponible bajo petición (pan sin gluten).'},
   // ===== PLATOS PRINCIPALES =====
-  {id:92,cat:'Platos Principales',name:'Arroz negro con txipirones asados',allergens:['Sulfitos','Apio','Huevos','Moluscos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Bisque (Caldo de Langostino): Cebolla blanca, Zanahoria, Puerro, Apio, Langostino, Brandy. Fondo: Calamar, Cebolleta, Vino blanco. Arroz bomba, Cebolla, Chalotas, Laurel, Mantequilla, Vino blanco. Crujiente de arroz. Ali-oli clásico y con Tinta de calamar',history:'',notes:null},
+  {id:92,cat:'Platos Principales',name:'Arroz negro con txipirones asados',allergens:['Sulfitos','Apio','Huevos','Moluscos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Bisque (Caldo de Langostino): Cebolla blanca, Zanahoria, Puerro, Apio, Langostino, Brandy. Fondo: Calamar, Cebolleta, Vino blanco. Arroz bomba, Cebolla, Chalotas, Laurel, Vino blanco. Crujiente de arroz. Ali-oli clásico y con Tinta de calamar',history:'',notes:null},
   {id:93,cat:'Platos Principales',name:'Pincho Moruno con cous cous',allergens:['Granos de sésamo','Mostaza','Cacahuete','Frutos de cáscara','Apio','Crustáceos','Sulfitos','Soja'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Carne de cordero. Marinada: Aceite de girasol, Pimentón, Cayena, Ajo, Semillas de cilantro, Comino, Orégano, Tomillo, Pimienta negra, Zumo de limón, Clavo, Anís estrellado. Ras al hanout, Lima. Cous Cous: Caldo de verduras, Sal, Pimienta, Almendras, Pasas de uva',history:'',notes:'⚠️ Contiene múltiples alérgenos que no pueden eliminarse. No apto para personas con alergias a sésamo, mostaza, cacahuete, frutos secos, apio, crustáceos o sulfitos.'},
-  {id:94,cat:'Platos Principales',name:'Panceta de cochino negro',allergens:['Lácteos','Sulfitos','Apio'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Panceta. Escabeche: Zanahoria, Vinagre de manzana, Azúcar, Agua, Azafrán. Veal jus: Demi de carne (Contiene Apio), Chalotas, Tomillo, Vino tinto. Zanahoria asada: Zanahoria, Vinagre, Azúcar, Jengibre. Mojo verde de Aguacate: Cilantro, Vinagre de manzana, Lima, Ajo, Aceite de girasol, Aceite de oliva, Cebolleta, Pimienta de Espellet, Aguacate',history:'Panceta de cochino negro reposada una semana en el Dry, cocida al horno hasta lograr la piel bien crocante y jugosa por dentro, servida sobre crema de escabeche de zanahoria.',notes:null},
+  {id:94,cat:'Platos Principales',name:'Panceta de cochino negro',allergens:['Lácteos','Sulfitos','Apio'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Panceta. Escabeche: Zanahoria, Vinagre de manzana, Azúcar, Agua, Azafrán. Veal jus: Demi de carne (Contiene Apio), Chalotas, Tomillo, Vino tinto. Zanahoria asada: Zanahoria, Vinagre, Azúcar, Jengibre. Mojo verde de Aguacate: Cilantro, Vinagre de manzana, Lima, Ajo, Aceite de girasol, Aceite de oliva, Cebolleta, Pimienta de Espellet, Aguacate',history:'Panceta de cochino negro reposada una semana en el Dry, cocida al horno hasta llegar a su punto, con la piel bien crocante y jugosa por dentro. Sobre crema de escabeche de zanahoria, acompañada con zanahoria asada con puntos de mojo verde de aguacate. Terminamos con Veal jus sobre la panceta.',notes:null},
   {id:95,cat:'Platos Principales',name:'Milanesa de pollo al mojo rojo',allergens:['Gluten','Huevos','Lácteos','Mostaza','Sulfitos','Pescado'],cutlery:'Tenedor trinchero, Cuchillo de carne',ingredients:'Pechuga de pollo. Mojo rojo: Pimiento rojo, Pimiento Palmero, Vinagre. Rebozado: Huevo, Harina, Pan rallado, Panko. Lechuga. Aderezo césar: Huevo, Aceite de oliva, Ajo, Anchoas, Mostaza Dijon, Zumo de limón, Queso parmesano, Salsa Perrins. Crujiente de Bacon, Crujiente de Parmesano',history:'',notes:null},
-  {id:96,cat:'Platos Principales',name:'Linguini con tartar de langostino',allergens:['Gluten','Lácteos','Sulfitos','Crustáceos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Pasta. Americana: Ajo, Zanahoria, Cebolla, Puerro, Tomate, Aceite de girasol, Gambas, Brandy, Agua. Mantequilla, Burrata, Lima, Brotes',history:'',notes:null},
+  {id:96,cat:'Platos Principales',name:'Linguini con tartar de langostino',allergens:['Gluten','Lácteos','Sulfitos','Crustáceos','Huevos'],cutlery:'Tenedor trinchero, Cuchillo trinchero, Cuchara sopera',ingredients:'Pasta (contiene huevo). Americana: Ajo, Zanahoria, Cebolla, Puerro, Tomate, Aceite de girasol, Gambas, Brandy, Agua. Mantequilla, Burrata, Lima, Brotes',history:'Pasta emulsionada con Demi de Americana, acompañada con Burrata y tartar de langostinos. Terminamos con ralladura de limón y Brotes.',notes:null},
   {id:97,cat:'Platos Principales',name:'Lubina crujiente con mayonesa de leche de tigre',allergens:['Gluten','Mostaza','Sulfitos','Apio','Pescado','Huevos'],cutlery:'Tenedor de pescado, Cuchillo de pescado',ingredients:'Lomo de Lubina, Harina, Huevo, Panko. Pico de gallo: Cebolla morada, Tomate, Ají Amarillo, Cilantro, Sal, Pimienta, Zumo de lima. Mayonesa de leche de tigre: Mayonesa (Huevo, Aceite, Vinagre, Mostaza, Limón, Sal), Leche de Tigre (Fumet, Zumo de Lima, Zumo de Limón, Apio, Ajo, Cilantro, Recortes de Lubina, Ají Amarillo, Ají Limo, Sal, Pimienta, Jengibre)',history:'',notes:null},
   // ===== GUARNICIONES Y SALSAS =====
   {id:98,cat:'Guarniciones y Salsas',name:'Chimichurri',allergens:['Sulfitos'],cutlery:'Cuchara de té',ingredients:'Tomate deshidratado, Cebolleta, Pimiento rojo y verde, Ajo, Aceite de oliva, Vinagre de Jerez, Ají, Limón, Perejil, Cebollino, Sal, Pimienta negra',history:'El Chimichurri es una salsa o aderezo típico de Argentina y Uruguay empleada sobre todo en carnes asadas. Se sirve en crudo, sin cocinar, y se deja reposar horas o días para que los sabores se integren. Es una de las salsas más emblemáticas del Asado Rioplatense.',notes:null},
@@ -2102,10 +2518,10 @@ const DISHES = [
   {id:100,cat:'Guarniciones y Salsas',name:'Verduras al vapor',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Brócoli, Zanahoria, Coliflor, Sal, Pimienta',history:'',notes:null},
   {id:101,cat:'Guarniciones y Salsas',name:'Patatas cerilla fritas',allergens:[],cutlery:'Tenedor trinchero, Cuchillo trinchero',ingredients:'Patatas locales, Aceite, Sal',history:'Nuestras patatas locales provienen de Tacoronte.',notes:'Sin alérgenos, pero puede haber contaminación cruzada de gluten. En caso de alergia al gluten avisar a cocina. Ofrecer siempre salsas para los niños (Mayonesa, Kétchup, etc.)'},
   // ===== NUEVOS POSTRES =====
-  {id:102,cat:'Postres',name:'Goxua',allergens:['Gluten','Lácteos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Bizcocho: Huevo, Azúcar, Vainilla, Polvo para hornear, Harina. Chantilly: Nata, Mascarpone, Azúcar, Vainilla, Gelatina. Baño: Nata, Leche, Azúcar, Ron, Vainilla. Crema Pastelera: Leche, Huevo, Azúcar, Maizena, Ralladura de limón, Vainilla, Mantequilla',history:'Postre típico del País Vasco, con base de Crema Chantilly, bizcocho empapado y crema pastelera flameada.',notes:null},
+  {id:102,cat:'Postres',name:'Goxua',allergens:['Gluten','Lácteos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Bizcocho: Huevo, Azúcar, Vainilla, Polvo para hornear, Harina. Chantilly: Nata, Mascarpone, Azúcar, Vainilla, Gelatina. Baño: Nata, Leche, Azúcar, Ron, Vainilla. Crema Pastelera: Leche, Huevo, Azúcar, Maizena, Ralladura de limón, Vainilla, Mantequilla',history:'Postre típico del País Vasco. Con base de Crema Chantilly, bizcocho empapado con vainilla, ron, nata, azúcar y leche. Terminamos con Crema Pastelera flameada.',notes:null},
   {id:103,cat:'Postres',name:'Helados Ben and Jerry\'s',allergens:['Gluten','Lácteos','Huevos','Soja'],cutlery:'Cuchara de postre',ingredients:'Sabores disponibles: Cookie Dough, Chocolate Fudge Brownie, Strawberry Cheesecake, Vainilla Pecan Brittle',history:'Helados premium de origen americano.',notes:'El sabor Vainilla Pecan Brittle contiene además Frutos de cáscara.'},
   {id:104,cat:'Postres',name:'Flan marmolado de chocolate y plátano',allergens:['Lácteos','Sulfitos','Huevos'],cutlery:'Cuchara de postre',ingredients:'Flan: Leche, Huevo, Azúcar, Naranja, Leche condensada, Vainilla. Flan de Chocolate: Leche, Nata, Sal, Naranja, Canela, Huevo, Azúcar, Mascarpone, Chocolate, Cacao. Crema de Plátano: Plátano, Vinagre de manzana, Azúcar, Jengibre. Almíbar: Vinagre de manzana, Azúcar, Jengibre',history:'',notes:null},
-  {id:105,cat:'Postres',name:'Tarta de queso',allergens:['Gluten','Lácteos'],cutlery:'Tenedor de postre, Cuchillo de postre, Cuchara de postre',ingredients:'Cheesecake: Queso San Millán, Azúcar, Yogurt natural, Huevo, Yema, Ralladura de limón, Vainilla. Sablé: Harina, Mantequilla, Azúcar glass, Flor de sal. Confitura de frutos rojos, Fresa, Brotes',history:'',notes:null},
+  {id:105,cat:'Postres',name:'Tarta de queso',allergens:['Gluten','Lácteos','Huevos'],cutlery:'Tenedor de postre, Cuchillo de postre, Cuchara de postre',ingredients:'Cheesecake: Queso San Millán, Azúcar, Yogurt natural, Huevo, Yema, Ralladura de limón, Vainilla. Sablé: Harina, Mantequilla, Azúcar glass, Flor de sal. Confitura de frutos rojos, Fresa, Brotes',history:'Tarta de queso con base de Sablé, con confitura de frutos rojos, fruta fresca y brotes.',notes:null},
 ];
 
 const TOPICS=[
@@ -3219,207 +3635,48 @@ function logout(){
   
 
 // ═══ CERTIFICACIONES POR CATEGORÍA ═══
-const CERT_THRESHOLD = 0.80; // 80% of dishes in category known = certified
 
 // ═══ RANKING (visible to all) ═══
 
 // ═══ SUPERVISOR PANEL ═══
-const SUP_PIN = '1966'; // Duvan's supervisor PIN
-
-let supAuthenticated = false;
-
-
-function renderSupDeleteEmployee(empNames) {
-  const c = document.getElementById('appContent');
-  c.innerHTML = `<div class="sup-wrap">
-    <div class="sup-hero">
-      <div class="sup-hero-icon">🗑️</div>
-      <div class="sup-hero-title">${LANG==='en'?'Delete Profile':'Eliminar Perfil'}</div>
-      <div class="sup-hero-sub">${LANG==='en'?'Select an employee to delete':'Selecciona un empleado para eliminar'}</div>
-    </div>
-    <div style="background:rgba(168,64,64,.08);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.75rem 1rem;margin-bottom:1rem;font-size:.72rem;color:var(--rose);font-family:'DM Mono',monospace">
-      ⚠️ ${LANG==='en'?'This action is permanent and cannot be undone.':'Esta acción es permanente y no se puede deshacer.'}
-    </div>
-    ${empNames.map(n => `
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:#fff;border:1px solid var(--line);border-radius:var(--r2);margin-bottom:.45rem">
-        <div style="width:34px;height:34px;border-radius:50%;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:.9rem;color:var(--gold);flex-shrink:0">${n[0].toUpperCase()}</div>
-        <div style="flex:1;font-size:.85rem;color:var(--parchment)">${n}</div>
-        <button onclick="supDeleteConfirm('${n}')" style="background:transparent;border:1px solid rgba(168,64,64,.4);border-radius:var(--r2);padding:.35rem .7rem;font-family:'Jost',sans-serif;font-size:.72rem;color:var(--rose);cursor:pointer">
-          ${LANG==='en'?'Delete':'Eliminar'}
-        </button>
-      </div>`).join('')}
-    <button onclick="renderSupDashboard()" class="btn-secondary" style="width:100%;margin-top:.75rem">← ${LANG==='en'?'Back to panel':'Volver al panel'}</button>
-  </div>`;
-}
-
-function supDeleteConfirm(name) {
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1.5rem';
-  overlay.innerHTML = `<div style="background:var(--ink2);border:1px solid rgba(168,64,64,.4);border-radius:var(--r);padding:1.5rem;max-width:320px;width:100%;text-align:center">
-    <div style="font-size:2rem;margin-bottom:.5rem">⚠️</div>
-    <div style="font-family:'Playfair Display',serif;font-size:1rem;color:var(--parchment);margin-bottom:.4rem">${LANG==='en'?'Delete':'Eliminar'} "${name}"?</div>
-    <div style="font-size:.72rem;color:var(--parch3);margin-bottom:1.25rem">${LANG==='en'?'All progress will be permanently lost.':'Todo el progreso se perderá permanentemente.'}</div>
-    <div style="display:flex;gap:.6rem">
-      <button onclick="this.closest('div[style]').remove()" style="flex:1;padding:.6rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;color:var(--parch3);cursor:pointer">${LANG==='en'?'Cancel':'Cancelar'}</button>
-      <button onclick="supDeleteExecute('${name}',this.closest('[style*=fixed]'))" style="flex:1;padding:.6rem;background:var(--rose);border:none;border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.82rem;font-weight:600;color:#fff;cursor:pointer">${LANG==='en'?'Delete':'Eliminar'}</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-}
-
-async function supDeleteExecute(name, overlay) {
-  // Delete from local DB
-  if (DB.employees[name]) { delete DB.employees[name]; saveDB(); }
-  // Delete from Supabase
-  try {
-    await fetch(`${SUPA_URL}/rest/v1/employees?name=eq.${encodeURIComponent(name)}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
-    });
-  } catch(e) {}
-  if (overlay) overlay.remove();
-  renderSupDashboard();
-}
-
-// ═══ ANALYTICS ═══
-
-// ═══ ENVIAR AVISO / NOTIFICACIÓN ═══
-
-// ═══ QUIZ EN VIVO ═══
-
-let liveQuizInterval = null;
-
-let liveCurrentQ = 0;
-
-// ═══ PARTICIPAR EN QUIZ EN VIVO (vista empleado) ═══
-
-let livePlayerInterval = null;
-let livePlayerLastQ = -1;
-
-// ═══ CARTA EDITOR ═══
-
-// ═══ NUEVO PLATO ═══
-
-// Load carta overrides on startup
-
-
-// ═══ MODO ERROR ═══
-
-
-// ═══ DUELO 1v1 ═══
-let duelState=null;
 
 
 
-function updateNavFade(){
-  const nav = document.getElementById('appNav');
-  const fade = document.getElementById('navFade');
-  if(!nav||!fade) return;
-  const r = nav.getBoundingClientRect();
-  fade.style.top = r.top + 'px';
-  fade.style.height = r.height + 'px';
-  fade.style.right = (window.innerWidth - r.right) + 'px';
-  const atEnd = nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 4;
-  fade.classList.toggle('hidden', atEnd);
-}
-document.addEventListener('DOMContentLoaded', () => {
-  const nav = document.getElementById('appNav');
-  if(nav){
-    nav.addEventListener('scroll', updateNavFade);
-    updateNavFade();
-  }
-});
-window.addEventListener('resize', updateNavFade);
+
+
+
+
+// ═══════════════════════════════════════════════
+// ═══ MÓDULO PROTOCOLO ═══
+// ═══════════════════════════════════════════════
+// Get all rules flat
+
+
+
+
+
+
 
 
 
 // ═══ AVATAR SYSTEM ═══
-const AVATAR_OPTIONS = [
-  '😊','😎','🧑‍🍳','👨‍🍳','👩‍🍳','🤵','👑','⭐','🌟','✨',
-  '🦁','🐯','🦊','🐺','🦅','🦋','🌹','🌿','🍀','🎯',
-  '💎','🏆','⚡','🔥','🌊','🎸','🎭','🎩','🍷','☕'
-];
 
-function getEmpAvatar(name) {
-  const emp = getEmp(name);
-  return emp.avatar || name[0].toUpperCase();
-}
 
-function renderAvatarDisplay(name, size='28px', fontSize='1rem') {
-  const av = getEmpAvatar(name);
-  const isEmoji = av.length > 1 || av.charCodeAt(0) > 127;
-  if(isEmoji) {
-    return `<div class="avatar-display" style="width:${size};height:${size};font-size:${fontSize}" onclick="openAvatarPicker()">${av}</div>`;
-  }
-  return `<div class="avatar-display" style="width:${size};height:${size};font-size:.8rem" onclick="openAvatarPicker()">${av}</div>`;
-}
 
-function openAvatarPicker() {
-  const current = getEmpAvatar(currentUser);
-  const overlay = document.createElement('div');
-  overlay.className = 'avatar-picker-overlay';
-  overlay.id = 'avatarPickerOverlay';
-  overlay.innerHTML = `
-    <div class="avatar-picker-modal">
-      <div class="avatar-picker-title">Tu avatar</div>
-      <div class="avatar-picker-sub">Elige tu icono</div>
-      <div class="avatar-grid">
-        ${AVATAR_OPTIONS.map(a => `
-          <div class="avatar-opt${a===current?' selected':''}" onclick="selectAvatar('${a}')">${a}</div>
-        `).join('')}
-      </div>
-      <button onclick="document.getElementById('avatarPickerOverlay').remove()"
-        style="width:100%;padding:.55rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer">
-        ${LANG==='en'?'Cancel':'Cancelar'}
-      </button>
-    </div>`;
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
-}
-
-function selectAvatar(emoji) {
-  const emp = getEmp(currentUser);
-  emp.avatar = emoji;
-  saveDB();
-  supaUpsertEmployee(currentUser);
-  // Update header
-  const headerAv = document.getElementById('headerAvatar');
-  if(headerAv) { headerAv.textContent = emoji; headerAv.style.fontSize = '1rem'; }
-  document.getElementById('avatarPickerOverlay')?.remove();
-}
-
-// ═══ SPLASH SCREEN ═══
-function hideSplash() {
-  const splash = document.getElementById('splashScreen');
-  if (!splash) return;
-  splash.classList.add('hiding');
-  setTimeout(() => splash.remove(), 520);
-}
-// Hide splash once fonts and DOM are ready — min 1.2s for elegance
-const _splashStart = Date.now();
-document.addEventListener('DOMContentLoaded', () => {
-  const elapsed = Date.now() - _splashStart;
-  const minDuration = 1400;
-  setTimeout(hideSplash, Math.max(0, minDuration - elapsed));
-});
-
-// ═══ SOUNDS ═══
-let soundEnabled=true;
 try{ soundEnabled=localStorage.getItem('txoko_sound')!=='off'; }catch(e){}
 
 
 // ═══ DISH ANIMATION ═══
-const CAT_EMOJIS={'Entrantes':'🥗','Hamburguesas y Bocatas':'🍔','Platos Principales':'🥩',
-  'Guarniciones y Salsas':'🫙','Postres':'🍮','Vegetariano':'🥦'};
 
-renderLogin();
+
+  setTimeout(hideSplash, 900);
 }
 
 // ═══════ TABS ═══════
 function showTab(tab){
   currentTab=tab;
   document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['dashboard','flashcards','exam','repaso','stats','txoko','ranking','supervisor'][i]===tab);
+    b.classList.toggle('active',['dashboard','protocolo','flashcards','exam','repaso','stats','txoko','ranking','supervisor'][i]===tab);
   });
   const c=document.getElementById('appContent');
   // Fade out current content then render new tab
@@ -3431,7 +3688,7 @@ function showTab(tab){
     c.style.transition='none';
     c.style.opacity='1';
     c.style.transform='translateY(0)';
-    ({dashboard:renderDashboard,flashcards:renderFlashcards,exam:renderExam,repaso:renderRepaso,stats:renderStats,txoko:renderTxoko,ranking:renderRanking,supervisor:renderSupervisor})[tab]();
+    ({dashboard:renderDashboard,flashcards:renderFlashcards,exam:renderExam,repaso:renderRepaso,stats:renderStats,txoko:renderTxoko,ranking:renderRanking,supervisor:renderSupervisor,protocolo:renderProtocolo})[tab]();
     // Animate in
     c.classList.remove('tab-entering');
     void c.offsetWidth; // force reflow
@@ -3673,16 +3930,26 @@ function renderExamSetup(){
       <div class="exam-setup-title">${t('examSetupTitle')}</div>
       <div class="exam-setup-desc">${t('examSetupDesc')}</div>
 
-      <div class="section-eyebrow">${t('topicCategory')}</div>
-      <div class="opt-grid" id="catOpts">
-        <div class="opt-tile sel" data-cat="all" onclick="selCat(this)"><div class="opt-tile-icon">🍽️</div><div class="opt-tile-name">${t('allCats')}</div><div class="opt-tile-sub">${DISHES.length} ${t('dishes')}</div></div>
-        ${getCats().map((c,i)=>`<div class="opt-tile" data-cat="${CATS_ES[i]}" style="--tile-cat-color:${getCatColor(CATS_ES[i])};border-top:2px solid ${getCatColor(CATS_ES[i])}" onclick="selCat(this)"><div class="opt-tile-icon">${CAT_ICONS[CATS_ES[i]]}</div><div class="opt-tile-name">${c}</div><div class="opt-tile-sub">${DISHES.filter(d=>d.cat===CATS_ES[i]).length} ${t('dishes')}</div></div>`).join('')}
+      <!-- Test de Alérgenos destacado -->
+      <div onclick="startAllergenTest(null)" style="display:flex;align-items:center;gap:.9rem;padding:.9rem 1rem;background:#fff;border:2px solid var(--rose);border-radius:var(--r);margin-bottom:1rem;cursor:pointer">
+        <div style="font-size:1.6rem;flex-shrink:0">⚠️</div>
+        <div style="flex:1">
+          <div style="font-size:.88rem;font-weight:500;color:var(--rose)">${LANG==='en'?'Allergen Test':'Test de Alérgenos'}</div>
+          <div style="font-size:.68rem;color:var(--parch3);font-family:'DM Mono',monospace">${LANG==='en'?'Real situations · Traps included':'Situaciones reales · Con trampas'}</div>
+        </div>
+        <div style="color:var(--rose);font-size:1rem">▶</div>
       </div>
 
       <div class="section-eyebrow">${t('topicTheme')}</div>
       <div class="opt-grid" id="topicOpts">
         <div class="opt-tile sel" data-topic="mixed" onclick="selTopic(this)"><div class="opt-tile-icon">🎲</div><div class="opt-tile-name">${t('mixed')}</div><div class="opt-tile-sub">${t('mixedSub')}</div></div>
         ${TOPICS.map(tp=>`<div class="opt-tile" data-topic="${tp.key}" onclick="selTopic(this)"><div class="opt-tile-icon">${{allergens:'⚠️',cutlery:'🍴',ingredients:'🧄',history:'📜'}[tp.key]}</div><div class="opt-tile-name">${tp.label}</div></div>`).join('')}
+      </div>
+
+      <div class="section-eyebrow">${t('topicCategory')}</div>
+      <div class="opt-grid" id="catOpts">
+        <div class="opt-tile sel" data-cat="all" onclick="selCat(this)"><div class="opt-tile-icon">🍽️</div><div class="opt-tile-name">${t('allCats')}</div><div class="opt-tile-sub">${DISHES.length} ${t('dishes')}</div></div>
+        ${getCats().map((c,i)=>`<div class="opt-tile" data-cat="${CATS_ES[i]}" style="--tile-cat-color:${getCatColor(CATS_ES[i])};border-top:2px solid ${getCatColor(CATS_ES[i])}" onclick="selCat(this)"><div class="opt-tile-icon">${CAT_ICONS[CATS_ES[i]]}</div><div class="opt-tile-name">${c}</div><div class="opt-tile-sub">${DISHES.filter(d=>d.cat===CATS_ES[i]).length} ${t('dishes')}</div></div>`).join('')}
       </div>
 
       <div class="section-eyebrow">${t('topicQuestions')}</div>
@@ -4037,7 +4304,6 @@ function renderStats(){
 
 
 // ═══ CERTIFICACIONES POR CATEGORÍA ═══
-const CERT_THRESHOLD = 0.80; // 80% of dishes in category known = certified
 
 function getCertifications(emp){
   const known = emp.knownDishes || {};
@@ -4147,9 +4413,8 @@ function renderRanking(){
 }
 
 // ═══ SUPERVISOR PANEL ═══
-const SUP_PIN = '1966'; // Duvan's supervisor PIN
 
-let supAuthenticated = false;
+
 
 function renderSupervisor(){
   if(!supAuthenticated){
@@ -4356,6 +4621,10 @@ function renderSupDashboard(){
               <span style="font-size:1.3rem">🎯</span>
               <span style="font-size:.72rem;font-weight:600;color:var(--gold)">Quiz en vivo</span>
             </button>
+            <button onclick="renderSupProtocolStats()" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid var(--line);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
+              <span style="font-size:1.3rem">📋</span>
+              <span style="font-size:.72rem;font-weight:500;color:var(--parch2)">${LANG==='en'?'Protocol Stats':'Stats Protocolo'}</span>
+            </button>
             <button onclick="renderSupDeleteEmployee(_supEmpNames)" style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.85rem .5rem;background:var(--ink);border:1px solid rgba(168,64,64,.3);border-radius:var(--r);font-family:'Jost',sans-serif;cursor:pointer;transition:all .2s;color:var(--parchment)">
               <span style="font-size:1.3rem">🗑️</span>
               <span style="font-size:.72rem;font-weight:500;color:var(--rose)">${LANG==='en'?'Delete profile':'Eliminar perfil'}</span>
@@ -4421,6 +4690,652 @@ async function supDeleteExecute(name, overlay) {
   if (overlay) overlay.remove();
   renderSupDashboard();
 }
+
+
+// ═══════════════════════════════════════════════
+// ═══ MÓDULO PROTOCOLO ═══
+// ═══════════════════════════════════════════════
+// Get all rules flat
+function getAllProtocolRules() {
+  return PROTOCOLO_SECTIONS.flatMap(s => s.rules.map(r => ({...r, section: s.id, sectionTitle: LANG==='en'?s.title_en:s.title, color: s.color, icon: s.icon})));
+}
+
+// ── RENDER PROTOCOLO MAIN ──
+
+
+
+
+
+
+
+function renderProtocolo() {
+  protocoloView = 'menu';
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div class="sup-hero">
+      <div class="sup-hero-icon">📋</div>
+      <div class="sup-hero-title">${LANG==='en'?'Service Protocol':'Protocolo de Servicio'}</div>
+      <div class="sup-hero-sub">${LANG==='en'?'Rules · Flashcards · Exam':'Reglas · Flashcards · Examen'}</div>
+    </div>
+
+    <!-- Quick access buttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:1.25rem">
+      <button onclick="startProtocoloFlashcards(null)" style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;background:var(--ink);border:1px solid var(--line2);border-radius:var(--r);cursor:pointer;transition:all .2s">
+        <span style="font-size:1.4rem">🃏</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--parch2);text-transform:uppercase">${LANG==='en'?'All Flashcards':'Todas las Flashcards'}</span>
+        <span style="font-size:.65rem;color:var(--parch4)">${getAllProtocolRules().length} ${LANG==='en'?'rules':'reglas'}</span>
+      </button>
+      <button onclick="startProtocoloExam(null)" style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r);cursor:pointer;transition:all .2s">
+        <span style="font-size:1.4rem">📝</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--gold);text-transform:uppercase">${LANG==='en'?'Rules Exam':'Examen Reglas'}</span>
+        <span style="font-size:.65rem;color:var(--parch3)">10 ${LANG==='en'?'questions':'preguntas'}</span>
+      </button>
+      <button onclick="startCasosPracticos(null)" style="display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:.9rem .5rem;background:var(--ink);border:2px solid #7095c8;border-radius:var(--r);cursor:pointer;transition:all .2s;grid-column:span 2">
+        <span style="font-size:1.4rem">🎭</span>
+        <span style="font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:#7095c8;text-transform:uppercase">${LANG==='en'?'Practical Cases':'Casos Prácticos'}</span>
+        <span style="font-size:.65rem;color:var(--parch3)">${LANG==='en'?'Real situations · Traps included':'Situaciones reales · Con trampas'}</span>
+      </button>
+      <button onclick="renderCredo()" style="grid-column:span 2;display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;background:linear-gradient(135deg,#1a3a5c 0%,#2a5080 50%,#1a3a5c 100%);border:1px solid rgba(91,141,184,.4);border-radius:var(--r);cursor:pointer;transition:all .2s;text-align:left;position:relative;overflow:hidden">
+        <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(255,255,255,.08) 0%,transparent 70%);pointer-events:none"></div>
+        <div style="flex-shrink:0;width:42px;height:42px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08)">
+          <svg viewBox="0 0 40 32" fill="none" width="28" height="24">
+            <rect x="6" y="22" width="28" height="5" rx="1.5" stroke="white" stroke-width="1.2" opacity=".9"/>
+            <path d="M6 22 L6 13 L13 17 L20 7 L27 17 L34 13 L34 22 Z" stroke="white" stroke-width="1.2" stroke-linejoin="round" fill="none" opacity=".9"/>
+            <circle cx="20" cy="11" r="2" fill="white" opacity=".7"/>
+            <circle cx="7" cy="13.5" r="1.5" fill="white" opacity=".5"/>
+            <circle cx="33" cy="13.5" r="1.5" fill="white" opacity=".5"/>
+          </svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-family:'Playfair Display',serif;font-size:.95rem;color:#fff;font-weight:400;margin-bottom:.15rem">${LANG==='en'?'The Credo':'El Credo'}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase">${LANG==='en'?'3 Steps · 12 Service Values':'3 Pasos · 12 Valores'}</div>
+        </div>
+        <div style="color:rgba(255,255,255,.4);font-size:.9rem">›</div>
+      </button>
+    </div>
+
+    <!-- Sections -->
+    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem;opacity:.8">— ${LANG==='en'?'Browse by section':'Explorar por sección'} —</div>
+    ${PROTOCOLO_SECTIONS.map(s => `
+      <div style="background:#fff;border:1px solid var(--line2);border-left:3px solid ${s.color};border-radius:var(--r2);margin-bottom:.5rem;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.85rem 1rem;cursor:pointer" onclick="renderProtocoloSection('${s.id}')">
+          <div style="font-size:1.4rem;flex-shrink:0">${s.icon}</div>
+          <div style="flex:1">
+            <div style="font-size:.88rem;font-weight:500;color:var(--parchment)">${LANG==='en'?s.title_en:s.title}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);margin-top:.1rem">${s.rules.length} ${LANG==='en'?'rules':'reglas'}</div>
+          </div>
+          <div style="display:flex;gap:.4rem">
+            <button onclick="event.stopPropagation();startProtocoloFlashcards('${s.id}')" style="background:var(--ink2);border:1px solid var(--line);border-radius:var(--r3);padding:.3rem .6rem;font-size:.65rem;color:var(--parch2);cursor:pointer">🃏</button>
+            <button onclick="event.stopPropagation();startProtocoloExam('${s.id}')" style="background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r3);padding:.3rem .6rem;font-size:.65rem;color:var(--gold);cursor:pointer">📝</button>
+            <span style="color:var(--parch4);align-self:center;font-size:.8rem">›</span>
+          </div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderProtocoloSection(sectionId) {
+  const s = PROTOCOLO_SECTIONS.find(x => x.id === sectionId);
+  if (!s) return;
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+      <button onclick="renderProtocolo()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-size:1.2rem">${s.icon}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment)">${LANG==='en'?s.title_en:s.title}</div>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-bottom:1rem">
+      <button onclick="startProtocoloFlashcards('${s.id}')" style="flex:1;padding:.55rem;background:var(--ink2);border:1px solid var(--line);border-radius:var(--r2);font-size:.75rem;color:var(--parch2);cursor:pointer">🃏 Flashcards</button>
+      <button onclick="startProtocoloExam('${s.id}')" style="flex:1;padding:.55rem;background:var(--gold-b);border:1px solid var(--gold-a);border-radius:var(--r2);font-size:.75rem;color:var(--gold);cursor:pointer">📝 ${LANG==='en'?'Exam':'Examen'}</button>
+      <button onclick="startCasosPracticos('${s.id}')" style="flex:1;padding:.55rem;background:var(--ink);border:1px solid #7095c8;border-radius:var(--r2);font-size:.75rem;color:#7095c8;cursor:pointer">🎭 ${LANG==='en'?'Cases':'Casos'}</button>
+    </div>
+    ${s.rules.map((r, i) => `
+      <div style="background:#fff;border:1px solid var(--line2);border-radius:var(--r2);padding:.9rem 1rem;margin-bottom:.5rem;border-left:3px solid ${s.color}">
+        <div style="font-size:.7rem;font-family:'DM Mono',monospace;color:${s.color};letter-spacing:.08em;margin-bottom:.3rem;text-transform:uppercase">${String(i+1).padStart(2,'0')}</div>
+        <div style="font-size:.88rem;font-weight:500;color:var(--parchment);margin-bottom:.4rem">${LANG==='en'?r.title_en:r.title}</div>
+        <div style="font-size:.78rem;color:var(--parch2);line-height:1.55">${LANG==='en'?r.body_en:r.body}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ── PROTOCOLO FLASHCARDS ──
+function startProtocoloFlashcards(sectionId) {
+  const rules = sectionId
+    ? PROTOCOLO_SECTIONS.find(s=>s.id===sectionId)?.rules.map(r=>({...r, section:sectionId, color:PROTOCOLO_SECTIONS.find(s=>s.id===sectionId).color, icon:PROTOCOLO_SECTIONS.find(s=>s.id===sectionId).icon}))
+    : getAllProtocolRules();
+  if(!rules || !rules.length) return;
+  // Shuffle
+  protocoloFcDishes = [...rules].sort(()=>Math.random()-.5);
+  protocoloFcIndex = 0;
+  protocoloFcFlipped = false;
+  renderProtocoloFcCard();
+}
+
+function renderProtocoloFcCard() {
+  const r = protocoloFcDishes[protocoloFcIndex];
+  const c = document.getElementById('appContent');
+  const pct = ((protocoloFcIndex+1)/protocoloFcDishes.length*100).toFixed(0);
+  c.innerHTML = `<div style="padding:1.25rem 1.25rem 0">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem">
+      <button onclick="renderProtocolo()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="flex:1">
+        <div class="fc-ribbon"><div class="fc-ribbon-fill" id="fcRibbon" style="width:${pct}%"></div></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3)">${protocoloFcIndex+1}/${protocoloFcDishes.length}</div>
+    </div>
+    <div class="fc-scene" id="pfcScene" onclick="flipProtocoloCard()" style="min-height:260px">
+      <div class="fc-card" id="pfcCard">
+        <div class="fc-face fc-front" id="pfcFront">
+          <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,${r.color},transparent);border-radius:var(--r) var(--r) 0 0;opacity:.7"></div>
+          <div class="fc-cat-chip" style="color:${r.color};border:1px solid ${r.color};background:rgba(0,0,0,.04)">${r.icon} ${LANG==='en'?(PROTOCOLO_SECTIONS.find(s=>s.id===r.section)?.title_en||''):(PROTOCOLO_SECTIONS.find(s=>s.id===r.section)?.title||'')}</div>
+          <div class="fc-topic-chip">${LANG==='en'?'What is the rule?':'¿Cuál es la regla?'}</div>
+          <div class="fc-dish" style="font-size:1.3rem">${LANG==='en'?r.title_en:r.title}</div>
+          <div class="fc-flip-hint">${LANG==='en'?'Tap to reveal':'Toca para revelar'}</div>
+        </div>
+        <div class="fc-face fc-back" id="pfcBack">
+          <div style="position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,${r.color},transparent);border-radius:0 0 var(--r) var(--r);opacity:.5"></div>
+          <div class="fc-answer-label" style="color:${r.color}">${LANG==='en'?'Rule':'Regla'}</div>
+          <div class="fc-dish-small" style="border-bottom:2px solid ${r.color};padding-bottom:.4rem;margin-bottom:.6rem">${LANG==='en'?r.title_en:r.title}</div>
+          <div class="fc-answer" style="font-size:.82rem">${LANG==='en'?r.body_en:r.body}</div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-rating" id="pfcRating" style="display:none">
+      <button class="fc-rate-btn fc-rate-no" onclick="rateProtocoloFc(0)">✗ ${LANG==='en'?'Still learning':'Repasando'}</button>
+      <button class="fc-rate-btn fc-rate-yes" onclick="rateProtocoloFc(2)">✓ ${LANG==='en'?'Got it':'Lo sé'}</button>
+    </div>
+  </div>`;
+}
+
+function flipProtocoloCard() {
+  if(protocoloFcFlipped) return;
+  document.getElementById('pfcCard')?.classList.add('flipped');
+  document.getElementById('pfcRating').style.display='flex';
+  protocoloFcFlipped = true;
+}
+
+function rateProtocoloFc(score) {
+  if(score >= 1) awardXP(3, LANG==='en'?'Protocol rule ✓':'Regla de protocolo ✓');
+  protocoloFcIndex++;
+  protocoloFcFlipped = false;
+  if(protocoloFcIndex >= protocoloFcDishes.length) {
+    document.getElementById('appContent').innerHTML = `<div style="text-align:center;padding:4rem 1rem;animation:scaleIn .4s ease both">
+      <div style="font-family:'Playfair Display',serif;font-size:3rem;color:var(--gold);margin-bottom:.5rem">✦</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--parchment);margin-bottom:.4rem">${LANG==='en'?'Section complete!':'¡Sección completada!'}</div>
+      <div style="font-size:.8rem;color:var(--parch3);margin-bottom:2rem">${protocoloFcDishes.length} ${LANG==='en'?'rules reviewed':'reglas repasadas'}</div>
+      <button class="btn-primary" onclick="renderProtocolo()" style="width:100%;max-width:280px">${LANG==='en'?'Back to Protocol':'Volver al Protocolo'}</button>
+    </div>`;
+  } else {
+    renderProtocoloFcCard();
+  }
+}
+
+// ── PROTOCOLO EXAM ──
+function startProtocoloExam(sectionId) {
+  const allRules = sectionId
+    ? PROTOCOLO_SECTIONS.find(s=>s.id===sectionId)?.rules.map(r=>({...r, section:sectionId, color:PROTOCOLO_SECTIONS.find(s=>s.id===sectionId).color}))
+    : getAllProtocolRules();
+  if(!allRules || !allRules.length) return;
+
+  // Build 10 questions (or fewer if not enough rules)
+  const shuffled = [...allRules].sort(()=>Math.random()-.5).slice(0, 10);
+  const questions = shuffled.map(r => {
+    // Pick 3 wrong answers from other rules
+    const others = allRules.filter(x=>x.id!==r.id).sort(()=>Math.random()-.5).slice(0,3);
+    const correct = LANG==='en'?r.body_en:r.body;
+    const wrongs = others.map(o=>LANG==='en'?o.body_en:o.body);
+    const choices = [correct, ...wrongs].sort(()=>Math.random()-.5);
+    return { rule: r, correct, choices, correctIdx: choices.indexOf(correct) };
+  });
+
+  protocoloExamState = { questions, index: 0, score: 0, answered: false, startTime: Date.now(), sectionId };
+  renderProtocoloExamQuestion();
+}
+
+function renderProtocoloExamQuestion() {
+  const { questions, index } = protocoloExamState;
+  if(index >= questions.length) { renderProtocoloExamResults(); return; }
+  const q = questions[index];
+  const r = q.rule;
+  const letters = ['A','B','C','D'];
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem">
+      <div style="flex:1"><div class="fc-ribbon"><div class="fc-ribbon-fill" style="width:${((index)/questions.length*100).toFixed(0)}%"></div></div></div>
+      <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3)">${index+1}/${questions.length}</div>
+    </div>
+    <div style="background:#fff;border:1px solid var(--line2);border-left:3px solid ${r.color};border-radius:var(--r2);padding:1rem;margin-bottom:1rem">
+      <div style="font-size:.65rem;font-family:'DM Mono',monospace;color:${r.color};letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">${r.icon} ${LANG==='en'?(PROTOCOLO_SECTIONS.find(s=>s.id===r.section)?.title_en||''):(PROTOCOLO_SECTIONS.find(s=>s.id===r.section)?.title||'')}</div>
+      <div style="font-size:.95rem;font-weight:500;color:var(--parchment);line-height:1.4">${LANG==='en'?r.title_en:r.title}</div>
+      <div style="font-size:.72rem;color:var(--parch3);margin-top:.4rem">${LANG==='en'?'What is the correct procedure?':'¿Cuál es el procedimiento correcto?'}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:.5rem">
+      ${q.choices.map((ch,i)=>`<button class="duel-answer-btn" id="pec${i}" onclick="answerProtocoloExam(${i})">${letters[i]}. ${ch}</button>`).join('')}
+    </div>
+    <div id="peqFeedback" style="min-height:1.5rem;text-align:center;font-size:.78rem;margin-top:.3rem"></div>
+  </div>`;
+  protocoloExamState.answered = false;
+}
+
+function answerProtocoloExam(idx) {
+  if(protocoloExamState.answered) return;
+  protocoloExamState.answered = true;
+  const { questions, index } = protocoloExamState;
+  const q = questions[index];
+  const ok = idx === q.correctIdx;
+  if(ok) { protocoloExamState.score++; awardXP(5, LANG==='en'?'Protocol answer ✓':'Respuesta protocolo ✓'); }
+  // Show feedback
+  for(let i=0;i<q.choices.length;i++){
+    const btn=document.getElementById(`pec${i}`);
+    if(!btn) continue;
+    btn.disabled=true;
+    if(i===q.correctIdx) btn.classList.add('correct');
+    else if(i===idx&&!ok) btn.classList.add('wrong');
+  }
+  const fb=document.getElementById('peqFeedback');
+  if(fb) fb.innerHTML = ok
+    ? `<span style="color:var(--sage)">✓ ${LANG==='en'?'Correct!':'¡Correcto!'}</span>`
+    : `<span style="color:var(--rose)">✗ ${LANG==='en'?'Correct:':'Correcto:'} ${q.correct.substring(0,80)}...</span>`;
+  protocoloExamState.index++;
+  setTimeout(renderProtocoloExamQuestion, 1400);
+}
+
+function renderProtocoloExamResults() {
+  const { questions, score, startTime, sectionId } = protocoloExamState;
+  const pct = Math.round(score/questions.length*100);
+  const time = Math.round((Date.now()-startTime)/1000);
+  const cls = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+  const bonus = pct>=90?30:pct>=70?15:pct>=50?5:0;
+  if(bonus) awardXP(bonus, `${LANG==='en'?'Protocol exam':'Examen protocolo'} (${pct}%)`);
+  // Save to Supabase
+  supaInsertScore({ score, total: questions.length, topic: 'protocolo', cat: sectionId||'all', time }, currentUser);
+  document.getElementById('appContent').innerHTML = `<div class="sup-wrap">
+    <div style="text-align:center;padding:2rem 1rem">
+      <div style="font-size:3rem;margin-bottom:.5rem">${pct>=80?'🏅':pct>=50?'📋':'📖'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.3rem">${LANG==='en'?'Exam complete':'Examen completado'}</div>
+      <div class="results-ring" style="margin:1.25rem auto">
+        <div class="results-pct" style="color:${cls}">${pct}<sup>%</sup></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--parch3);margin-bottom:1.5rem">${score}/${questions.length} · ${Math.floor(time/60)}m ${time%60}s${bonus?` · +${bonus} XP`:''}</div>
+      <button class="btn-primary" onclick="startProtocoloExam(null)" style="width:100%;margin-bottom:.5rem">${LANG==='en'?'New exam':'Nuevo examen'}</button>
+      <button onclick="renderProtocolo()" style="width:100%;padding:.65rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer">← ${LANG==='en'?'Back to Protocol':'Volver al Protocolo'}</button>
+    </div>
+  </div>`;
+}
+
+
+async function supaFetchProtocolScores() {
+  try {
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/scores?topic=eq.protocolo&select=employee,score,total,cat,created_at&order=created_at.desc&limit=200`,
+      { headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` } }
+    );
+    if (!res.ok) return [];
+    return await res.json();
+  } catch(e) { return []; }
+}
+
+
+async function renderSupProtocolStats() {
+  const c = document.getElementById('appContent');
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment)">📋 ${LANG==='en'?'Protocol Exam Stats':'Stats Examen Protocolo'}</div>
+    </div>
+    <div style="text-align:center;padding:1.5rem;color:var(--parch3);font-size:.8rem">⏳ ${LANG==='en'?'Loading...':'Cargando...'}</div>
+  </div>`;
+
+  const rows = await supaFetchProtocolScores();
+
+  if (!rows.length) {
+    c.innerHTML = `<div class="sup-wrap">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer;margin-bottom:1rem">←</button>
+      <div style="text-align:center;padding:2rem;color:var(--parch3);font-size:.85rem">${LANG==='en'?'No protocol exams yet.':'Sin exámenes de protocolo todavía.'}</div>
+    </div>`;
+    return;
+  }
+
+  // Aggregate by employee
+  const byEmp = {};
+  rows.forEach(r => {
+    if (!r.employee) return;
+    if (!byEmp[r.employee]) byEmp[r.employee] = { name: r.employee, exams: 0, totalPct: 0, best: 0, worst: 100, lastDate: null, sections: {} };
+    const pct = r.total > 0 ? Math.round(r.score / r.total * 100) : 0;
+    byEmp[r.employee].exams++;
+    byEmp[r.employee].totalPct += pct;
+    byEmp[r.employee].best = Math.max(byEmp[r.employee].best, pct);
+    byEmp[r.employee].worst = Math.min(byEmp[r.employee].worst, pct);
+    if (!byEmp[r.employee].lastDate || r.created_at > byEmp[r.employee].lastDate) byEmp[r.employee].lastDate = r.created_at;
+    // Section breakdown
+    const sec = r.cat || 'all';
+    if (!byEmp[r.employee].sections[sec]) byEmp[r.employee].sections[sec] = { correct: 0, total: 0 };
+    byEmp[r.employee].sections[sec].correct += r.score || 0;
+    byEmp[r.employee].sections[sec].total += r.total || 0;
+  });
+
+  const sorted = Object.values(byEmp).sort((a, b) => (b.totalPct/b.exams) - (a.totalPct/a.exams));
+
+  // Section labels
+  const secLabels = { servicio: '🤵 Servicio', comandas: '📝 Comandas', sistema: '💻 Sistema', pasos: '🌟 3 Pasos', valores: '💎 Valores', all: '📋 Completo' };
+
+  // Team weak sections
+  const secTotals = {};
+  rows.forEach(r => {
+    const sec = r.cat || 'all';
+    if (!secTotals[sec]) secTotals[sec] = { correct: 0, total: 0 };
+    secTotals[sec].correct += r.score || 0;
+    secTotals[sec].total += r.total || 0;
+  });
+  const weakSections = Object.entries(secTotals)
+    .filter(([k, v]) => v.total > 0 && k !== 'all')
+    .map(([k, v]) => ({ key: k, pct: Math.round(v.correct / v.total * 100) }))
+    .sort((a, b) => a.pct - b.pct)
+    .slice(0, 3);
+
+  c.innerHTML = `<div class="sup-wrap">
+    <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:1rem">
+      <button onclick="renderSupDashboard()" style="background:transparent;border:1px solid var(--line);border-radius:var(--r2);padding:.4rem .8rem;font-size:.75rem;color:var(--parch3);cursor:pointer">←</button>
+      <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--parchment)">📋 ${LANG==='en'?'Protocol Exam Stats':'Stats Examen Protocolo'}</div>
+    </div>
+
+    ${weakSections.length ? `
+    <div style="background:rgba(168,64,64,.07);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.85rem 1rem;margin-bottom:1rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--rose);letter-spacing:.12em;text-transform:uppercase;margin-bottom:.5rem">⚠️ ${LANG==='en'?'Weakest sections (team)':'Secciones más débiles (equipo)'}</div>
+      ${weakSections.map(s => `
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.3rem 0">
+          <div style="flex:1;font-size:.8rem;color:var(--parchment)">${secLabels[s.key]||s.key}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.72rem;font-weight:600;color:${s.pct<60?'var(--rose)':'var(--gold)'}">${s.pct}%</div>
+        </div>`).join('')}
+    </div>` : ''}
+
+    <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--gold);letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem;opacity:.8">— ${LANG==='en'?'By employee':'Por empleado'} —</div>
+
+    ${sorted.map(emp => {
+      const avg = Math.round(emp.totalPct / emp.exams);
+      const col = avg>=80?'var(--sage)':avg>=50?'var(--gold)':'var(--rose)';
+      const date = emp.lastDate ? new Date(emp.lastDate).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}) : '—';
+      const worstSec = Object.entries(emp.sections)
+        .filter(([k,v]) => v.total>0 && k!=='all')
+        .map(([k,v]) => ({key:k, pct:Math.round(v.correct/v.total*100)}))
+        .sort((a,b)=>a.pct-b.pct)[0];
+      return `<div style="background:#fff;border:1px solid var(--line2);border-radius:var(--r2);padding:.85rem 1rem;margin-bottom:.5rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--ink3);display:flex;align-items:center;justify-content:center;font-size:${getEmpAvatar(emp.name).length>1?'1rem':'.85rem'};flex-shrink:0">${getEmpAvatar(emp.name)}</div>
+          <div style="flex:1">
+            <div style="font-size:.88rem;font-weight:500;color:var(--parchment)">${emp.name}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3)">${emp.exams} ${LANG==='en'?'exam(s)':'examen(es)'} · ${LANG==='en'?'Last':'Último'}: ${date}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:'Playfair Display',serif;font-size:1.2rem;color:${col}">${avg}%</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--parch4)">${LANG==='en'?'avg':'media'}</div>
+          </div>
+        </div>
+        ${worstSec && worstSec.pct < 70 ? `<div style="margin-top:.5rem;padding:.35rem .6rem;background:rgba(168,64,64,.06);border-radius:var(--r3);font-size:.68rem;color:var(--rose)">⚠️ ${LANG==='en'?'Weak area':'Punto débil'}: ${secLabels[worstSec.key]||worstSec.key} (${worstSec.pct}%)</div>` : ''}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+
+// ═══ CASOS PRÁCTICOS DE PROTOCOLO ═══
+function startCasosPracticos(sectionId) {
+  const casos = sectionId
+    ? CASOS_PRACTICOS.filter(c => c.section === sectionId)
+    : [...CASOS_PRACTICOS];
+  if (!casos.length) return;
+  const shuffled = casos.sort(() => Math.random() - .5).slice(0, 10);
+  const questions = shuffled.map(c => {
+    const correct = LANG === 'en' ? c.correct_en : c.correct;
+    const traps = LANG === 'en' ? c.traps_en : c.traps;
+    const choices = [correct, ...traps].sort(() => Math.random() - .5);
+    return { caso: c, correct, choices, correctIdx: choices.indexOf(correct) };
+  });
+  protocoloExamState = { questions, index: 0, score: 0, answered: false, startTime: Date.now(), sectionId, mode: 'casos' };
+  renderCasoQuestion();
+}
+
+function renderCasoQuestion() {
+  const { questions, index } = protocoloExamState;
+  if (index >= questions.length) { renderProtocoloExamResults(); return; }
+  const q = questions[index];
+  const c = q.caso;
+  const letters = ['A','B','C','D'];
+  document.getElementById('appContent').innerHTML = `
+    <div class="sup-wrap">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem">
+        <div style="flex:1"><div class="fc-ribbon"><div class="fc-ribbon-fill" style="width:${(index/questions.length*100).toFixed(0)}%"></div></div></div>
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3)">${index+1}/${questions.length}</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line2);border-left:3px solid ${c.color};border-radius:var(--r2);padding:1rem;margin-bottom:.85rem">
+        <div style="font-size:.65rem;font-family:'DM Mono',monospace;color:${c.color};letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">${c.icon} ${LANG==='en'?'Situation':'Situación'}</div>
+        <div style="font-size:.95rem;color:var(--parchment);line-height:1.55;font-weight:500">${LANG==='en'?c.situation_en:c.situation}</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">${LANG==='en'?'What is the correct action?':'¿Cuál es la acción correcta?'}</div>
+      <div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:.5rem">
+        ${q.choices.map((ch,i)=>`<button class="duel-answer-btn" id="cpb${i}" onclick="answerCaso(${i})">${letters[i]}. ${ch}</button>`).join('')}
+      </div>
+      <div id="casoFeedback" style="min-height:2rem;font-size:.78rem;margin-top:.3rem;padding:.5rem;border-radius:var(--r2)"></div>
+    </div>`;
+  protocoloExamState.answered = false;
+}
+
+function answerCaso(idx) {
+  if (protocoloExamState.answered) return;
+  protocoloExamState.answered = true;
+  const { questions, index } = protocoloExamState;
+  const q = questions[index];
+  const ok = idx === q.correctIdx;
+  if (ok) { protocoloExamState.score++; awardXP(5, LANG==='en'?'Case study ✓':'Caso práctico ✓'); }
+  for (let i = 0; i < q.choices.length; i++) {
+    const btn = document.getElementById(`cpb${i}`);
+    if (!btn) continue;
+    btn.disabled = true;
+    if (i === q.correctIdx) btn.classList.add('correct');
+    else if (i === idx && !ok) btn.classList.add('wrong');
+  }
+  const fb = document.getElementById('casoFeedback');
+  if (fb) {
+    if (ok) fb.innerHTML = `<span style="color:var(--sage)">✓ ${LANG==='en'?'Correct!':'¡Correcto!'}</span>`;
+    else fb.innerHTML = `<span style="color:var(--rose)">✗ ${LANG==='en'?'Correct action:':'Acción correcta:'}</span><br><span style="font-size:.75rem;color:var(--parch2)">${q.correct}</span>`;
+  }
+  protocoloExamState.index++;
+  setTimeout(renderCasoQuestion, 1600);
+}
+
+
+// ═══ TEST DE ALÉRGENOS (generado dinámicamente) ═══
+function getAllAllergensList() {
+  return Object.keys(ALLERGEN_ES_TO_EN);
+}
+
+function buildAllergenQuestions(cat) {
+  const pool = (cat && cat !== 'all')
+    ? DISHES.filter(d => d.cat === cat)
+    : [...DISHES];
+  if (!pool.length) return [];
+
+  const questions = [];
+  const shuffled = [...pool].sort(() => Math.random() - .5);
+
+  for (const dish of shuffled) {
+    if (questions.length >= 10) break;
+    const allergens = dish.allergens || [];
+    if (!allergens.length) continue;
+
+    const dishDisplay = LANG === 'en' ? (DISHES_EN.find(x=>x.id===dish.id)?.name || dish.name) : dish.name;
+    const declaredAllergen = allergens[Math.floor(Math.random() * allergens.length)];
+    const enAllergen = ALLERGEN_ES_TO_EN[declaredAllergen] || declaredAllergen;
+
+    // Check if notes explicitly say this allergen can be removed (strict check)
+    const notesLower = (dish.notes || '').toLowerCase();
+    const allergenLower = declaredAllergen.toLowerCase();
+    const isRemovable = dish.notes && (
+      notesLower.includes('puede prepararse sin') ||
+      notesLower.includes('puede servirse sin') ||
+      notesLower.includes('puede evitarse') ||
+      notesLower.includes('can be prepared without') ||
+      notesLower.includes('can be served without')
+    ) && notesLower.includes(allergenLower.slice(0,5));
+
+    // Correct answer
+    const correct = isRemovable
+      ? (LANG === 'en'
+          ? `Consult with the kitchen — it contains ${enAllergen} but can be prepared without it on request.`
+          : `Consultar con cocina — contiene ${declaredAllergen} pero puede prepararse sin él bajo petición.`)
+      : (LANG === 'en'
+          ? `No — this dish contains ${enAllergen} and cannot be served.`
+          : `No — este plato contiene ${declaredAllergen} y no se puede servir.`);
+
+    // Traps — all plausible mistakes, none confusingly wrong
+    const traps = [
+      LANG === 'en'
+        ? `Yes — the ${enAllergen} in this dish is minimal and not a risk.`
+        : `Sí — el ${declaredAllergen} de este plato es mínimo y no supone riesgo.`,
+      LANG === 'en'
+        ? `Yes, but inform the guest it contains ${enAllergen}.`
+        : `Sí, pero informando al cliente de que contiene ${declaredAllergen}.`,
+      LANG === 'en'
+        ? `Ask the kitchen to remove the ${enAllergen} ingredient before serving.`
+        : `Pedir a cocina que retire el ingrediente con ${declaredAllergen} antes de servir.`
+    ].sort(() => Math.random() - .5);
+
+    const choices = [correct, ...traps].sort(() => Math.random() - .5);
+    questions.push({
+      dish, dishDisplay, declaredAllergen, enAllergen,
+      situation: LANG === 'en'
+        ? `A guest declares a ${enAllergen} allergy. They want to order "${dishDisplay}". Can you serve it?`
+        : `Un cliente declara alergia a ${declaredAllergen}. Quiere pedir "${dishDisplay}". ¿Puedes servirlo?`,
+      correct, choices,
+      correctIdx: choices.indexOf(correct),
+      color: getCatColor(dish.cat),
+      icon: CAT_ICONS[dish.cat] || '🍽️',
+      catLabel: dish.cat
+    });
+
+    // Type 2: dish does NOT contain a specific allergen — safe to serve?
+    const allAllergens = [...new Set(pool.flatMap(d => d.allergens || []))];
+    const notInDish = allAllergens.filter(a => !allergens.includes(a)).sort(() => Math.random() - .5);
+    if (notInDish.length > 0 && Math.random() > 0.65 && questions.length < 10) {
+      const safeAllergen = notInDish[0];
+      const safeEn = ALLERGEN_ES_TO_EN[safeAllergen] || safeAllergen;
+      const safeCorrect = LANG === 'en'
+        ? `Yes — this dish does not contain ${safeEn}. It can be served.`
+        : `Sí — este plato no contiene ${safeAllergen}. Se puede servir.`;
+      const safeTraps = [
+        LANG === 'en'
+          ? `No — all dishes may contain traces due to shared kitchen equipment.`
+          : `No — todos los platos pueden contener trazas por compartir equipos en cocina.`,
+        LANG === 'en'
+          ? `Consult the kitchen before serving any guest with allergies.`
+          : `Consultar siempre con cocina antes de servir a cualquier alérgico.`,
+        LANG === 'en'
+          ? `No — ask the guest to sign a waiver first.`
+          : `No — pedir al cliente que firme una exención antes de servirlo.`
+      ].sort(() => Math.random() - .5);
+      const safeChoices = [safeCorrect, ...safeTraps].sort(() => Math.random() - .5);
+      questions.push({
+        dish, dishDisplay, declaredAllergen: safeAllergen, enAllergen: safeEn,
+        situation: LANG === 'en'
+          ? `A guest declares a ${safeEn} allergy. They want to order "${dishDisplay}". Can you serve it?`
+          : `Un cliente declara alergia a ${safeAllergen}. Quiere pedir "${dishDisplay}". ¿Puedes servirlo?`,
+        correct: safeCorrect, choices: safeChoices,
+        correctIdx: safeChoices.indexOf(safeCorrect),
+        color: getCatColor(dish.cat),
+        icon: CAT_ICONS[dish.cat] || '🍽️',
+        catLabel: dish.cat
+      });
+    }
+  }
+
+  return questions.slice(0, 10).sort(() => Math.random() - .5);
+}
+
+
+function startAllergenTest(cat) {
+  const questions = buildAllergenQuestions(cat);
+  if (!questions.length) { alert(LANG==='en'?'Not enough data':'Sin datos suficientes'); return; }
+  allergenTestState = { questions, index: 0, score: 0, answered: false, startTime: Date.now(), cat };
+  renderAllergenQuestion();
+}
+
+function renderAllergenQuestion() {
+  const { questions, index } = allergenTestState;
+  if (index >= questions.length) { renderAllergenResults(); return; }
+  const q = questions[index];
+  const letters = ['A','B','C','D'];
+  const pct = (index / questions.length * 100).toFixed(0);
+  document.getElementById('appContent').innerHTML = `
+    <div class="sup-wrap">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem">
+        <div style="flex:1"><div class="fc-ribbon"><div class="fc-ribbon-fill" style="width:${pct}%"></div></div></div>
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--parch3)">${index+1}/${questions.length}</div>
+      </div>
+      <div style="background:#fff;border:1px solid var(--line2);border-left:3px solid ${q.color};border-radius:var(--r2);padding:1rem;margin-bottom:.85rem">
+        <div style="font-size:.65rem;font-family:'DM Mono',monospace;color:${q.color};letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">${q.icon} ${q.catLabel} · ${LANG==='en'?'Allergen test':'Test de alérgenos'}</div>
+        <div style="font-size:.95rem;color:var(--parchment);line-height:1.55;font-weight:500">${q.situation}</div>
+
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">${LANG==='en'?'Choose the correct action:':'Elige la acción correcta:'}</div>
+      <div style="display:flex;flex-direction:column;gap:.45rem;margin-bottom:.5rem">
+        ${q.choices.map((ch,i)=>`<button class="duel-answer-btn" id="atb${i}" onclick="answerAllergenTest(${i})">${letters[i]}. ${ch}</button>`).join('')}
+      </div>
+      <div id="atFeedback" style="min-height:2rem;font-size:.78rem;margin-top:.3rem;padding:.5rem;border-radius:var(--r2)"></div>
+    </div>`;
+  allergenTestState.answered = false;
+}
+
+function answerAllergenTest(idx) {
+  if (allergenTestState.answered) return;
+  allergenTestState.answered = true;
+  const { questions, index } = allergenTestState;
+  const q = questions[index];
+  const ok = idx === q.correctIdx;
+  if (ok) { allergenTestState.score++; awardXP(5, LANG==='en'?'Allergen test ✓':'Test alérgenos ✓'); }
+  for (let i = 0; i < q.choices.length; i++) {
+    const btn = document.getElementById(`atb${i}`);
+    if (!btn) continue;
+    btn.disabled = true;
+    if (i === q.correctIdx) btn.classList.add('correct');
+    else if (i === idx && !ok) btn.classList.add('wrong');
+  }
+  const fb = document.getElementById('atFeedback');
+  if (fb) {
+    const allergenInfo = (q.dish.allergens||[]).join(', ');
+    if (ok) {
+      fb.innerHTML = `<span style="color:var(--sage)">✓ ${LANG==='en'?'Correct!':'¡Correcto!'}</span><br><span style="font-size:.7rem;color:var(--parch3)">${LANG==='en'?'Allergens:':'Alérgenos:'} ${allergenInfo||'—'}</span>`;
+    } else {
+      fb.innerHTML = `<span style="color:var(--rose)">✗ ${LANG==='en'?'Incorrect.':'Incorrecto.'}</span><br><span style="font-size:.75rem;color:var(--parch2)">${q.correct}</span><br><span style="font-size:.7rem;color:var(--parch3)">${LANG==='en'?'Allergens:':'Alérgenos:'} ${allergenInfo||'—'}</span>`;
+    }
+  }
+  allergenTestState.index++;
+  setTimeout(renderAllergenQuestion, 1800);
+}
+
+function renderAllergenResults() {
+  const { questions, score, startTime, cat } = allergenTestState;
+  const pct = Math.round(score / questions.length * 100);
+  const time = Math.round((Date.now() - startTime) / 1000);
+  const cls = pct>=80?'var(--sage)':pct>=50?'var(--gold)':'var(--rose)';
+  const bonus = pct>=90?30:pct>=70?15:pct>=50?5:0;
+  if (bonus) awardXP(bonus, `${LANG==='en'?'Allergen exam':'Examen alérgenos'} (${pct}%)`);
+  supaInsertScore({ score, total: questions.length, topic: 'alergenos', cat: cat||'all', time }, currentUser);
+  document.getElementById('appContent').innerHTML = `<div class="sup-wrap">
+    <div style="text-align:center;padding:2rem 1rem">
+      <div style="font-size:3rem;margin-bottom:.5rem">${pct>=80?'🛡️':pct>=50?'⚠️':'🚨'}</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--parchment);margin-bottom:.3rem">${LANG==='en'?'Allergen test complete':'Test de alérgenos completado'}</div>
+      <div class="results-ring" style="margin:1.25rem auto">
+        <div class="results-pct" style="color:${cls}">${pct}<sup>%</sup></div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.75rem;color:var(--parch3);margin-bottom:.5rem">${score}/${questions.length} · ${Math.floor(time/60)}m ${time%60}s</div>
+      ${pct < 80 ? `<div style="background:rgba(168,64,64,.08);border:1px solid rgba(168,64,64,.2);border-radius:var(--r2);padding:.75rem;margin-bottom:1rem;font-size:.78rem;color:var(--rose)">⚠️ ${LANG==='en'?'Review the allergens section before service':'Repasa la sección de alérgenos antes del servicio'}</div>` : ''}
+      <button class="btn-primary" onclick="startAllergenTest('${cat||''}')" style="width:100%;margin-bottom:.5rem">${LANG==='en'?'New test':'Nuevo test'}</button>
+      <button onclick="renderExam()" style="width:100%;padding:.65rem;background:transparent;border:1px solid var(--line);border-radius:var(--r2);font-family:'Jost',sans-serif;font-size:.8rem;color:var(--parch3);cursor:pointer">← ${LANG==='en'?'Back to Exam':'Volver al Examen'}</button>
+    </div>
+  </div>`;
+}
+
+
 
 // ═══ ANALYTICS ═══
 function renderSupAnalytics(allEmps, empNames){
@@ -4635,7 +5550,7 @@ async function supaSubmitLiveAnswer(code, name, qIdx, answer){
   } catch(e){}
 }
 
-let liveQuizInterval = null;
+
 
 function renderLiveQuizHost(empNames){
   // Build 5 random questions
@@ -4711,7 +5626,7 @@ function renderLiveQuizHost(empNames){
   });
 }
 
-let liveCurrentQ = 0;
+
 async function advanceLiveQuiz(code, questions){
   if(liveCurrentQ >= questions.length){
     await supaUpdateLiveSession(code, { state: 'ended', current_q: liveCurrentQ });
@@ -4807,8 +5722,8 @@ function renderJoinLiveQuiz(){
   </div>`;
 }
 
-let livePlayerInterval = null;
-let livePlayerLastQ = -1;
+
+
 
 async function joinLiveQuiz(){
   const code = document.getElementById('liveCode')?.value.trim();
@@ -5904,7 +6819,7 @@ async function submitDefense() {
 }
 
 // ═══ DUELO 1v1 (legacy local) ═══
-let duelState=null;
+
 
 function renderDuelLegacy(){
   const empNames=Object.keys(DB.employees).filter(n=>n);
@@ -6076,24 +6991,11 @@ function updateNavFade(){
   const atEnd = nav.scrollLeft + nav.clientWidth >= nav.scrollWidth - 4;
   fade.classList.toggle('hidden', atEnd);
 }
-document.addEventListener('DOMContentLoaded', () => {
-  const nav = document.getElementById('appNav');
-  if(nav){
-    nav.addEventListener('scroll', updateNavFade);
-    updateNavFade();
-  }
-});
-window.addEventListener('resize', updateNavFade);
+
 
 
 
 // ═══ AVATAR SYSTEM ═══
-const AVATAR_OPTIONS = [
-  '😊','😎','🧑‍🍳','👨‍🍳','👩‍🍳','🤵','👑','⭐','🌟','✨',
-  '🦁','🐯','🦊','🐺','🦅','🦋','🌹','🌿','🍀','🎯',
-  '💎','🏆','⚡','🔥','🌊','🎸','🎭','🎩','🍷','☕'
-];
-
 function getEmpAvatar(name) {
   const emp = getEmp(name);
   return emp.avatar || name[0].toUpperCase();
@@ -6149,16 +7051,10 @@ function hideSplash() {
   splash.classList.add('hiding');
   setTimeout(() => splash.remove(), 520);
 }
-// Hide splash once fonts and DOM are ready — min 1.2s for elegance
-const _splashStart = Date.now();
-document.addEventListener('DOMContentLoaded', () => {
-  const elapsed = Date.now() - _splashStart;
-  const minDuration = 1400;
-  setTimeout(hideSplash, Math.max(0, minDuration - elapsed));
-});
 
-// ═══ SOUNDS ═══
-let soundEnabled=true;
+
+
+
 try{ soundEnabled=localStorage.getItem('txoko_sound')!=='off'; }catch(e){}
 
 function playSound(type){
@@ -6204,8 +7100,6 @@ function toggleSound(){
 
 
 // ═══ DISH ANIMATION ═══
-const CAT_EMOJIS={'Entrantes':'🥗','Hamburguesas y Bocatas':'🍔','Platos Principales':'🥩',
-  'Guarniciones y Salsas':'🫙','Postres':'🍮','Vegetariano':'🥦'};
 
 function burstEmoji(emoji){
   for(let i=0;i<6;i++){
@@ -6220,7 +7114,7 @@ function burstEmoji(emoji){
   }
 }
 
-renderLogin();
+
 
 // ═══════════════════════════════════════════════════
 //  🔥 TXOKO — MINIJUEGO
@@ -6972,6 +7866,10 @@ function txGameOver(){
       </div>
     </div>`;
 }
+
+// Init
+renderLogin();
+
 </script>
 <script>
 if('serviceWorker' in navigator){
