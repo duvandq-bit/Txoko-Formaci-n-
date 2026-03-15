@@ -4044,8 +4044,9 @@ try{ soundEnabled=localStorage.getItem('txoko_sound')!=='off'; }catch(e){}
 // ═══════ TABS ═══════
 function showTab(tab){
   currentTab=tab;
-  document.querySelectorAll('.nav-btn').forEach((b,i)=>{
-    b.classList.toggle('active',['dashboard','protocolo','flashcards','exam','repaso','stats','txoko','ranking','supervisor'][i]===tab);
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    const btnTab = b.id.replace('nav','').replace('Protocolo','protocolo').replace('Flashcards','flashcards').replace('Dashboard','dashboard').replace('Exam','exam').replace('Repaso','repaso').replace('Stats','stats').replace('Txoko','txoko').replace('Ranking','ranking').replace('Supervisor','supervisor');
+    b.classList.toggle('active', btnTab === tab);
   });
   const c=document.getElementById('appContent');
   // Fade out current content then render new tab
