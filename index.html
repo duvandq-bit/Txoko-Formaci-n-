@@ -163,7 +163,7 @@ body::before{
   font-family:'Playfair Display',serif;font-size:.95rem;
   color:var(--gold);flex-shrink:0;
 }
-.employee-btn .emp-name{font-size:.85rem;font-weight:500;color:var(--parchment);letter-spacing:.01em}
+.employee-btn .emp-name{font-size:.92rem;font-weight:500;color:var(--parchment);letter-spacing:.01em}
 .employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--parch3);margin-top:.1rem}
 
 .login-sep{
@@ -287,7 +287,7 @@ body::before{
   font-family:'Playfair Display',serif;font-size:.9rem;
   color:#c8a96e;flex-shrink:0;
 }
-.employee-btn .emp-name{font-size:.85rem;font-weight:500;color:#f2eae0;letter-spacing:.01em}
+.employee-btn .emp-name{font-size:.92rem;font-weight:500;color:#f2eae0;letter-spacing:.01em}
 .employee-btn .emp-stats{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch3);margin-top:.1rem}
 
 .login-sep{
@@ -1573,6 +1573,9 @@ body::before{
     <div class="header-user">
       <div class="header-avatar" id="headerAvatar"></div>
       <span class="header-uname" id="headerUsername"></span>
+      <button id="notifBell" onclick="renderNotifPanel()" style="display:none;background:transparent;border:none;cursor:pointer;padding:4px;position:relative;font-size:1.2rem;line-height:1">
+        ◉<span id="notifBadge" style="position:absolute;top:0;right:0;background:var(--rose);color:#fff;border-radius:50%;width:14px;height:14px;font-size:.55rem;font-family:Jost,sans-serif;font-weight:700;display:none;align-items:center;justify-content:center"></span>
+      </button>
       <button class="btn-logout" id="logoutBtn" onclick="logout()">Salir</button>
     </div>
   </header>
@@ -3372,18 +3375,13 @@ async function checkAndShowNotifications(name) {
 }
 
 function updateNotifBadge(count) {
+  const btn = document.getElementById('notifBell');
   let badge = document.getElementById('notifBadge');
-  if(!badge) {
-    const btn = document.createElement('button');
-    btn.id = 'notifBell';
-    btn.onclick = () => renderNotifPanel();
-    btn.style.cssText = 'position:fixed;top:10px;right:80px;background:transparent;border:none;font-size:1.3rem;cursor:pointer;z-index:900;padding:4px';
-    btn.innerHTML = '◉<span id="notifBadge" style="position:absolute;top:2px;right:2px;background:var(--rose);color:#fff;border-radius:50%;width:14px;height:14px;font-size:.55rem;font-family:Jost,sans-serif;font-weight:700;display:flex;align-items:center;justify-content:center"></span>';
-    document.body.appendChild(btn);
-    badge = document.getElementById('notifBadge');
+  if(btn) btn.style.display = count > 0 ? 'inline-block' : 'none';
+  if(badge){
+    badge.textContent = count > 9 ? '9+' : count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
   }
-  badge.textContent = count > 9 ? '9+' : count;
-  badge.style.display = count > 0 ? 'flex' : 'none';
 }
 
 async function renderNotifPanel() {
@@ -3920,24 +3918,68 @@ function renderLogin(){
     renderLeaderboard();
     return;
   }
-  list.innerHTML=names.map(n=>{
-    const e=DB.employees[n];
-    const s=e.sessions||[];
-    const avg=s.length?Math.round(s.reduce((a,x)=>a+(x.score/x.total*100),0)/s.length):0;
-    return `<div class="emp-row" style="display:flex;align-items:center;gap:.4rem;position:relative">
-      <button class="employee-btn" style="flex:1" onclick="login('${n}')">
-        <div class="avatar" style="font-size:${getEmpAvatar(n).length>1||getEmpAvatar(n).charCodeAt(0)>127?'1rem':'.85rem'}">${getEmpAvatar(n)}</div>
-        <div>
-          <div class="emp-name">${n}</div>
-          <div class="emp-stats">${s.length} ${t('sessions')}${s.length?' · '+avg+'% '+t('sessionsMedia'):''}</div>
-        </div>
-      </button>
+  const lastUser = localStorage.getItem('txoko_last_user');
+  const localNames = lastUser && DB.employees[lastUser] ? [lastUser] : [];
+  const otherNames = names.filter(n => n !== lastUser);
 
-    </div>`;
+  // Local user — big and prominent
+  const localHTML = localNames.map(n => {
+    const e = DB.employees[n];
+    const s = e.sessions||[];
+    const avg = s.length ? Math.round(s.reduce((a,x)=>a+(x.score/x.total*100),0)/s.length) : 0;
+    return `<button class="employee-btn" style="width:100%;margin-bottom:.5rem;padding:1rem 1.1rem" onclick="login('${n}')">
+      <div class="avatar" style="font-size:${getEmpAvatar(n).length>1||getEmpAvatar(n).charCodeAt(0)>127?'1.2rem':'1rem'};width:42px;height:42px">${getEmpAvatar(n)}</div>
+      <div>
+        <div class="emp-name" style="font-size:1rem;color:var(--gold);font-weight:600;font-family:'Playfair Display',serif">${n}</div>
+        <div class="emp-stats">${s.length} ${t('sessions')}${s.length?' · '+avg+'% '+t('sessionsMedia'):''}</div>
+      </div>
+    </button>`;
   }).join('');
+
+  // Other users — compact, behind a toggle
+  const othersHTML = otherNames.length ? `
+    <div style="margin-top:.25rem">
+      <button onclick="toggleOtherProfiles()" style="width:100%;background:transparent;border:1px dashed var(--line2);border-radius:var(--r2);padding:.5rem;font-family:'DM Mono',monospace;font-size:.58rem;color:var(--parch4);letter-spacing:.1em;cursor:pointer;text-transform:uppercase" id="otherProfilesBtn">
+        ${LANG==='en'?'Other profiles':'Otros perfiles'} (${otherNames.length}) ▾
+      </button>
+      <div id="otherProfilesList" style="display:none;margin-top:.4rem">
+        ${otherNames.map(n => {
+          const e = DB.employees[n];
+          const s = e.sessions||[];
+          return `<button class="employee-btn" style="width:100%;margin-bottom:.3rem" onclick="login('${n}')">
+            <div class="avatar" style="font-size:${getEmpAvatar(n).length>1||getEmpAvatar(n).charCodeAt(0)>127?'1rem':'.85rem'}">${getEmpAvatar(n)}</div>
+            <div>
+              <div class="emp-name" style="color:var(--parchment);font-weight:500">${n}</div>
+            </div>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  list.innerHTML = (localHTML || names.map(n => {
+    const e = DB.employees[n];
+    const s = e.sessions||[];
+    const avg = s.length ? Math.round(s.reduce((a,x)=>a+(x.score/x.total*100),0)/s.length) : 0;
+    return `<button class="employee-btn" style="width:100%;margin-bottom:.4rem" onclick="login('${n}')">
+      <div class="avatar" style="font-size:${getEmpAvatar(n).length>1||getEmpAvatar(n).charCodeAt(0)>127?'1rem':'.85rem'}">${getEmpAvatar(n)}</div>
+      <div>
+        <div class="emp-name">${n}</div>
+        <div class="emp-stats">${s.length} ${t('sessions')}${s.length?' · '+avg+'% '+t('sessionsMedia'):''}</div>
+      </div>
+    </button>`;
+  }).join('')) + othersHTML;
   renderLeaderboard();
 }
 
+
+function toggleOtherProfiles(){
+  const list = document.getElementById('otherProfilesList');
+  const btn = document.getElementById('otherProfilesBtn');
+  if(!list) return;
+  const open = list.style.display !== 'none';
+  list.style.display = open ? 'none' : 'block';
+  if(btn) btn.textContent = btn.textContent.replace(open?'▴':'▾', open?'▾':'▴');
+}
 function addEmployee(){
   const inp=document.getElementById('newEmpInput');
   const name=inp.value.trim();
@@ -4004,6 +4046,7 @@ let pinTarget=null, pinBuffer='', pinStep='enter'; // step: 'enter'|'setup1'|'se
 let pinFirst=''; // store first entry during setup
 
 function login(name){
+  localStorage.setItem('txoko_last_user', name);
   const emp=getEmp(name);
   if(emp.pin){
     // Has PIN — ask for it
