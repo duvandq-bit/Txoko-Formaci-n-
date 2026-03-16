@@ -69,9 +69,9 @@ body::before{
 /* ─────────────────────────────────────────────────
    SCREENS
 ───────────────────────────────────────────────── */
-.screen{display:none;min-height:100vh;position:relative;z-index:1;animation:screenIn .35s ease both}
+.screen{display:none;min-height:100vh;position:relative;z-index:1}
 .screen.active{display:flex}
-@keyframes screenIn{from{opacity:0}to{opacity:1}}
+
 
 /* ─────────────────────────────────────────────────
    LOGIN
@@ -179,9 +179,9 @@ body::before{
   font-family:'Jost',sans-serif;font-size:.85rem;outline:none;
   transition:border-color .2s;
 }
-.screen{display:none;min-height:100vh;position:relative;z-index:1;animation:screenIn .35s ease both}
+.screen{display:none;min-height:100vh;position:relative;z-index:1}
 .screen.active{display:flex}
-@keyframes screenIn{from{opacity:0}to{opacity:1}}
+
 
 /* ─────────────────────────────────────────────────
    LOGIN
@@ -3691,6 +3691,8 @@ let examActive=false,examStartTime=0,examResults=null;
 let repasoView='cats',repasoCat=null,repasoTopic='allergens';
 
 // ═══════ LOGIN ═══════
+
+
 loadDB();
 loadCartaOverrides();
 syncCustomDishesFromCloud();
@@ -4322,8 +4324,7 @@ function renderDashboard(){
   document.getElementById('appContent').innerHTML=`
 
     <!-- ── HERO ── -->
-    <div class="dash-hero-alive" style="background:linear-gradient(135deg,#1a1610 0%,#2a1f14 60%,#1a1610 100%);border-radius:var(--r);padding:1.5rem 1.4rem 1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;">
-      <div class="dashboard-particles" id="dashParticles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:var(--r)"></div>
+    <div style="background:linear-gradient(135deg,#1a1610 0%,#2a1f14 60%,#1a1610 100%);border-radius:var(--r);padding:1.5rem 1.4rem 1.25rem;margin-bottom:1rem;position:relative;overflow:hidden;">
       <!-- Decorative glow -->
       <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(200,169,110,.12) 0%,transparent 70%);pointer-events:none"></div>
       <!-- Top row -->
@@ -4425,56 +4426,11 @@ function renderDashboard(){
     </div>
   `;
   checkActiveLiveSession();
-  requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(initDashboardAlive, 600)));
+
 }
 
 
-// ─── Dashboard alive effects ───
-function initDashboardAlive(){
-  // Run in idle time to not block main thread
-  // Floating particles in hero
-  const container = document.getElementById('dashParticles');
-  if(container){
-    container.innerHTML = '';
-    let styleEl = document.getElementById('particleStyles');
-    if(!styleEl){ styleEl = document.createElement('style'); styleEl.id='particleStyles'; document.head.appendChild(styleEl); }
-    let keyframesCSS = '';
-    const ts = Date.now();
-    const count = 10;
-    for(let i=0;i<count;i++){
-      const x    = (4 + Math.random()*90).toFixed(1);
-      const y    = (30 + Math.random()*60).toFixed(1);
-      const dur  = (5 + Math.random()*6).toFixed(1);
-      const delay= (2 + i * 0.6 + Math.random()*2).toFixed(1); // staggered: each particle appears later
-      const dx   = ((Math.random()-0.5)*40).toFixed(0);
-      const dy   = (60 + Math.random()*70).toFixed(0);
-      const size = (2 + Math.random()*2.5).toFixed(1);  // 2-4.5px
-      const op   = (0.5 + Math.random()*0.3).toFixed(2);
-      const glow = (parseFloat(size)*2).toFixed(0);
-      const name = `pd${i}_${ts}`;
-      keyframesCSS +=
-        `@keyframes ${name}{` +
-        `0%{transform:translate(0,0);opacity:0}` +
-        `20%{opacity:${op}}` +
-        `75%{opacity:${(op*0.4).toFixed(2)}}` +
-        `100%{transform:translate(${dx}px,-${dy}px);opacity:0}` +
-        `}`;
-      const p = document.createElement('div');
-      p.style.cssText =
-        `position:absolute;` +
-        `left:${x}%;top:${y}%;` +
-        `width:${size}px;height:${size}px;` +
-        `border-radius:50%;` +
-        `background:rgba(200,169,110,${op});` +
-        `box-shadow:0 0 ${glow}px rgba(200,169,110,0.4);` +
-        `animation:${name} ${dur}s ease-out ${delay}s infinite`;
-      container.appendChild(p);
-    }
-    styleEl.textContent = keyframesCSS;
-  }
-  // Stat numbers already showing correct value — no jump needed
-  // XP bar — shimmer only, no width reset
-}
+
 async function checkActiveLiveSession(){
   try {
     const res = await fetch(`${SUPA_URL}/rest/v1/live_sessions?state=eq.active&order=created_at.desc&limit=1`,
@@ -8814,19 +8770,6 @@ function txGameOver(){
 renderLogin();
 
 </script>
-<script>
-if('serviceWorker' in navigator){
-  // Inline service worker for offline cache
-  const sw = `
-self.addEventListener('install',e=>e.waitUntil(
-  caches.open('txoko-v1').then(c=>c.addAll([location.href||'/']))
-));
-self.addEventListener('fetch',e=>e.respondWith(
-  fetch(e.request).catch(()=>caches.match(e.request))
-));`;
-  const blob = new Blob([sw],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
-}
-</script>
+
 </body>
 </html>
