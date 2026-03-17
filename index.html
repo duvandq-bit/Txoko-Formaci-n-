@@ -6449,9 +6449,27 @@ function buildAllergenQuestions(cat) {
     const isRemovable = !isExplicitlyNotRemovable && 
       dish.notes && (hasComandaNote || hasTraditionalNote) && allergenMentioned;
 
-    // Build comanda instruction from note if available
-    const comandaMatch = dish.notes && dish.notes.match(/Comandar ([^.]+)\./);
-    const comandaInstr = comandaMatch ? comandaMatch[1] : '';
+    // Build comanda instruction — find the one specific to this allergen
+    let comandaInstr = '';
+    if(dish.notes) {
+      // Split by · or sentence and find segment mentioning this allergen
+      const noteSegs = dish.notes.split(/[·]/);
+      const allergenSeg = noteSegs.find(seg => 
+        seg.toLowerCase().includes(allergenSlice) || seg.toLowerCase().includes(enAllergenSlice)
+      ) || '';
+      const segMatch = allergenSeg.match(/Comandar ([^.]+)\./);
+      if(segMatch) {
+        comandaInstr = segMatch[1];
+      } else {
+        // Fallback: find Comandar SIN that comes after mentioning this allergen
+        const allergenPos = dish.notes.toLowerCase().indexOf(allergenSlice);
+        if(allergenPos >= 0) {
+          const afterAllergen = dish.notes.slice(allergenPos);
+          const afterMatch = afterAllergen.match(/Comandar ([^.]+)\./);
+          if(afterMatch) comandaInstr = afterMatch[1];
+        }
+      }
+    }
 
     // Correct answer
     const correct = isRemovable
