@@ -3218,6 +3218,7 @@ async function supaUpsertEmployee(name) {
         sessions_data: JSON.stringify((emp.sessions || []).slice(-20)),
         txoko_record: emp.txokoRecord || 0,
         avatar: emp.avatar || null,
+        duel_wins: emp.duelWins || 0,
         updated_at: new Date().toISOString()
       })
     });
@@ -3267,7 +3268,8 @@ async function supaFetchAllEmployees() {
       knownDishes: (() => { try { return JSON.parse(r.known_dishes||'{}'); } catch(e){ return {}; } })(),
       examCorrect: (() => { try { return JSON.parse(r.exam_correct||'{}'); } catch(e){ return {}; } })(),
       sessions: (() => { try { const sd=JSON.parse(r.sessions_data||'[]'); return sd.length ? sd : Array(r.sessions_count||0).fill({}); } catch(e){ return Array(r.sessions_count||0).fill({}); } })(),
-      txokoRecord: r.txoko_record || 0
+      txokoRecord: r.txoko_record || 0,
+      duelWins: r.duel_wins || 0
     }));
   } catch(e) { return null; }
 }
@@ -5363,15 +5365,30 @@ function renderRanking(){
     <div id="rankingContent" style="text-align:center;padding:2rem;color:var(--parch3);font-family:'DM Mono',monospace;font-size:.72rem">—</div>
   </div>`;
 
+  // Force sync current user before loading ranking
+  supaUpsertEmployee(currentUser);
+
   Promise.all([
     supaFetchAllEmployees(),
     supaFetchLeaderboard()
   ]).then(([remoteEmps, supaScores]) => {
-    // Build unified employee map
+    // Build unified employee map — remote is source of truth, local fills gaps
     let allEmps = {};
+    // Start with local data
     Object.keys(DB.employees).forEach(n => { if(n) allEmps[n] = {...DB.employees[n], name: n}; });
+    // Remote always wins (it aggregates all devices)
     if(remoteEmps && remoteEmps.length) remoteEmps.forEach(e => {
-      if(!allEmps[e.name] || (e.xp||0) >= (allEmps[e.name].xp||0)) allEmps[e.name] = e;
+      if(!e.name) return;
+      // Use remote XP if higher OR if local doesn't have this user
+      if(!allEmps[e.name]) { allEmps[e.name] = e; return; }
+      // Merge: take highest XP, but keep local sessions/scores if richer
+      allEmps[e.name] = {
+        ...allEmps[e.name],
+        ...e,
+        xp: Math.max(allEmps[e.name].xp||0, e.xp||0),
+        streak: Math.max(allEmps[e.name].streak||0, e.streak||0),
+        sessions: (e.sessions||[]).length > (allEmps[e.name].sessions||[]).length ? e.sessions : allEmps[e.name].sessions,
+      };
     });
 
     // Count activity from Supabase scores per employee
@@ -7995,6 +8012,7 @@ async function submitDefense() {
   const { cScore, dScore, cWins, dWins, tiebreak } = result;
   const iWon = dWins;
   const xpAmt = iWon ? 50 : cWins ? 10 : 25;
+  if(iWon){ const emp=getEmp(currentUser); emp.duelWins=(emp.duelWins||0)+1; }
   awardXP(xpAmt, iWon ? (LANG==='en'?'Duel victory! 🥊':'¡Victoria en duelo! 🥊') : cWins ? (LANG==='en'?'Duel lost':'Duelo perdido') : (LANG==='en'?'Duel draw':'Empate en duelo'));
 
   // Notify challenger
@@ -8164,7 +8182,7 @@ function duelGameOver(){
   const s1=scores[p1]||0, s2=scores[p2]||0;
   const winner=s1>s2?p1:s2>s1?p2:null;
   // Award XP
-  if(winner){ awardXP(40, LANG==='en'?`Duel victory! ⚡`:`¡Victoria en duelo! ⚡`); }
+  if(winner){ const emp=getEmp(currentUser); emp.duelWins=(emp.duelWins||0)+1; awardXP(40, LANG==='en'?`Duel victory! ⚡`:`¡Victoria en duelo! ⚡`); }
   document.getElementById('appContent').innerHTML=`
     <div class="sup-wrap">
       <div style="text-align:center;padding:2rem 1rem">
